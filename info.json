@@ -1,7 +1,7 @@
 {
     "extensions": [
         {
-            "slug": "geko/extensions/src/FurryR/lpp",
+            "slug": "src/FurryR/lpp",
             "id": "text",
             "name": "Animated Text",
             "description": "An easy way to display and animate text. Compatible with Scratch Lab's Animated Text experiment.",
@@ -21,7 +21,7 @@
                 "ru": "Make OOP programmes.",
                 "zh-cn": "制作OOP程序。"
             },
-            "image": "geko/extensions/src/FurryR/lpp.svg",
+            "image": "src/FurryR/lpp.svg",
             "by": [
                 {
                     "name": "FurryR @ Github",
