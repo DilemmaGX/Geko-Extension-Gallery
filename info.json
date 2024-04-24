@@ -1,0 +1,33 @@
+{
+    "extensions": [
+        {
+            "slug": "geko/extensions/src/FurryR/lpp",
+            "id": "text",
+            "name": "Animated Text",
+            "description": "An easy way to display and animate text. Compatible with Scratch Lab's Animated Text experiment.",
+            "nameTranslations": {
+                "de": "lpp.js",
+                "it": "lpp.js",
+                "nb": "lpp.js",
+                "nl": "lpp.js",
+                "ru": "lpp.js",
+                "zh-cn": "lpp.js"
+            },
+            "descriptionTranslations": {
+                "de": "Make OOP programmes.",
+                "it": "Make OOP programmes.",
+                "nb": "Make OOP programmes.",
+                "nl": "Make OOP programmes.",
+                "ru": "Make OOP programmes.",
+                "zh-cn": "制作OOP程序。"
+            },
+            "image": "geko/extensions/src/FurryR/lpp.svg",
+            "by": [
+                {
+                    "name": "FurryR @ Github",
+                    "link": null
+                }
+            ]
+        }
+    ]
+}
