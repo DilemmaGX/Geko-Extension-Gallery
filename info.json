@@ -2,9 +2,9 @@
     "extensions": [
         {
             "slug": "src/FurryR/lpp",
-            "id": "text",
-            "name": "Animated Text",
-            "description": "An easy way to display and animate text. Compatible with Scratch Lab's Animated Text experiment.",
+            "id": "lpp",
+            "name": "lpp.js",
+            "description": "Make OOP programmes.",
             "nameTranslations": {
                 "de": "lpp.js",
                 "it": "lpp.js",
