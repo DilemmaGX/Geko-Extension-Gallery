@@ -27,6 +27,62 @@
                     "link": "https://github.com/0832k12"
                 }
             ]
+        },
+        {
+            "slug": "extensions/veclist.js",
+            "id": "veclist",
+            "name": "Vec与列表",
+            "description": "将列表作为Vec使用。",
+            "nameTranslations": {
+                "de": "Vec与列表",
+                "it": "Vec与列表",
+                "nb": "Vec与列表",
+                "nl": "Vec与列表",
+                "ru": "Vec与列表",
+                "zh-cn": "Vec与列表"
+            },
+            "descriptionTranslations": {
+                "de": "将列表作为Vec使用。",
+                "it": "将列表作为Vec使用。",
+                "nb": "将列表作为Vec使用。",
+                "nl": "将列表作为Vec使用。",
+                "ru": "将列表作为Vec使用。",
+                "zh-cn": "将列表作为Vec使用。"
+            },
+            "by": [
+                {
+                    "name": "0832k12 @ Github",
+                    "link": "https://github.com/0832k12"
+                }
+            ]
+        },
+        {
+            "slug": "extensions/rsc.js",
+            "id": "rsc",
+            "name": "编译器",
+            "description": "尽情地使用吧！这些块在编译器中得到原生支持。",
+            "nameTranslations": {
+                "de": "编译器",
+                "it": "编译器",
+                "nb": "编译器",
+                "nl": "编译器",
+                "ru": "编译器",
+                "zh-cn": "编译器"
+            },
+            "descriptionTranslations": {
+                "de": "尽情地使用吧！这些块在编译器中得到原生支持。",
+                "it": "尽情地使用吧！这些块在编译器中得到原生支持。",
+                "nb": "尽情地使用吧！这些块在编译器中得到原生支持。",
+                "nl": "尽情地使用吧！这些块在编译器中得到原生支持。",
+                "ru": "尽情地使用吧！这些块在编译器中得到原生支持。",
+                "zh-cn": "尽情地使用吧！这些块在编译器中得到原生支持。"
+            },
+            "by": [
+                {
+                    "name": "0832k12 @ Github",
+                    "link": "https://github.com/0832k12"
+                }
+            ]
         }
     ]
 }
