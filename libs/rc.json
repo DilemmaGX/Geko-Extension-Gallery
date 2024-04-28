@@ -1,7 +1,7 @@
 {
     "extensions": [
         {
-            "slug": "extensions/matches.js",
+            "slug": "extensions/matches",
             "id": "matches",
             "name": "选取",
             "description": "使用matches，提高效率，让程序更加现代化。",
