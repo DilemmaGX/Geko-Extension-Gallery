@@ -1,0 +1,32 @@
+{
+    "extensions": [
+        {
+            "slug": "extensions/matches.js",
+            "id": "matches",
+            "name": "选取",
+            "description": "使用matches，提高效率，让程序更加现代化。",
+            "nameTranslations": {
+                "de": "lpp.js",
+                "it": "lpp.js",
+                "nb": "lpp.js",
+                "nl": "lpp.js",
+                "ru": "lpp.js",
+                "zh-cn": "lpp.js"
+            },
+            "descriptionTranslations": {
+                "de": "使用matches，提高效率，让程序更加现代化。",
+                "it": "使用matches，提高效率，让程序更加现代化。",
+                "nb": "使用matches，提高效率，让程序更加现代化。",
+                "nl": "使用matches，提高效率，让程序更加现代化。",
+                "ru": "使用matches，提高效率，让程序更加现代化。",
+                "zh-cn": "使用matches，提高效率，让程序更加现代化。"
+            },
+            "by": [
+                {
+                    "name": "0832k12 @ Github",
+                    "link": "https://github.com/0832k12"
+                }
+            ]
+        }
+    ]
+}
