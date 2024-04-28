@@ -174,12 +174,12 @@
             "name": "换行符",
             "description": "\\n",
             "nameTranslations": {
-                "de": "\\n",
-                "it": "\\n",
-                "nb": "\\n",
-                "nl": "\\n",
-                "ru": "\\n",
-                "zh-cn": "\\n"
+                "de": "换行符",
+                "it": "换行符",
+                "nb": "换行符",
+                "nl": "换行符",
+                "ru": "换行符",
+                "zh-cn": "换行符"
             },
             "descriptionTranslations": {
                 "de": "\\n",
