@@ -29,7 +29,7 @@
             ]
         },
         {
-            "slug": "extensions/veclist.js",
+            "slug": "extensions/veclist",
             "id": "veclist",
             "name": "Vec与列表",
             "description": "将列表作为Vec使用。",
@@ -57,7 +57,7 @@
             ]
         },
         {
-            "slug": "extensions/rsc.js",
+            "slug": "extensions/rsc",
             "id": "rsc",
             "name": "编译器",
             "description": "尽情地使用吧！这些块在编译器中得到原生支持。",
