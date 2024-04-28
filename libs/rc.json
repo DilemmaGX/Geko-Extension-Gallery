@@ -6,12 +6,12 @@
             "name": "选取",
             "description": "使用matches，提高效率，让程序更加现代化。",
             "nameTranslations": {
-                "de": "lpp.js",
-                "it": "lpp.js",
-                "nb": "lpp.js",
-                "nl": "lpp.js",
-                "ru": "lpp.js",
-                "zh-cn": "lpp.js"
+                "de": "选取",
+                "it": "选取",
+                "nb": "选取",
+                "nl": "选取",
+                "ru": "选取",
+                "zh-cn": "选取"
             },
             "descriptionTranslations": {
                 "de": "使用matches，提高效率，让程序更加现代化。",
