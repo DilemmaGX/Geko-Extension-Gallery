@@ -28,6 +28,25 @@
                     "link": "https://github.com/Noname-awa"
                 }
             ]
+        },
+        {
+            "slug": "extensions/NOname/Motion",
+            "id": "debuger",
+            "name": "运动",
+            "description": "The breakpoint and console window allow you to enter and output content, making debugging programs more convenient.",
+            "nameTranslations": {
+                "zh-cn": "运动"
+            },
+            "descriptionTranslations": {
+                "zh-cn": "断点与控制台窗口，可以输入输出内容，方便调试程序。"
+            },
+            "image": "assets/img/NOname/Motion.svg",
+            "by": [
+                {
+                    "name": "Noname-awa @ Github",
+                    "link": "https://github.com/Noname-awa"
+                }
+            ]
         }
     ]
 }
