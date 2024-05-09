@@ -4,21 +4,11 @@
             "slug": "extensions/NOname/debuger",
             "id": "debuger",
             "name": "Debuger",
-            "description": "The breakpoint and console window allow you to enter and output content, making debugging programs more convenient.",
+            "description": "The breakpoint and console window allow you to enter and output content, making debugging programs more convenient",
             "nameTranslations": {
-                "de": "Debuger",
-                "it": "Debuger",
-                "nb": "Debuger",
-                "nl": "Debuger",
-                "ru": "Debuger",
                 "zh-cn": "调试器"
             },
             "descriptionTranslations": {
-                "de": "The breakpoint and console window allow you to enter and output content, making debugging programs more convenient",
-                "it": "The breakpoint and console window allow you to enter and output content, making debugging programs more convenient",
-                "nb": "The breakpoint and console window allow you to enter and output content, making debugging programs more convenient",
-                "nl": "The breakpoint and console window allow you to enter and output content, making debugging programs more convenient",
-                "ru": "The breakpoint and console window allow you to enter and output content, making debugging programs more convenient",
                 "zh-cn": "断点与控制台窗口，可以输入输出内容，方便调试程序。"
             },
             "image": "assets/img/NOname/debuger.svg",
@@ -32,13 +22,13 @@
         {
             "slug": "extensions/NOname/Motion",
             "id": "debuger",
-            "name": "运动",
-            "description": "The breakpoint and console window allow you to enter and output content, making debugging programs more convenient.",
+            "name": "Motion",
+            "description": "Some blocks about moving around.",
             "nameTranslations": {
                 "zh-cn": "运动"
             },
             "descriptionTranslations": {
-                "zh-cn": "断点与控制台窗口，可以输入输出内容，方便调试程序。"
+                "zh-cn": "一些运动的扩展积木。"
             },
             "image": "assets/img/NOname/Motion.svg",
             "by": [
