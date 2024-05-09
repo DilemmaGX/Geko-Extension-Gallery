@@ -21,7 +21,7 @@
         },
         {
             "slug": "extensions/NOname/Motion",
-            "id": "debuger",
+            "id": "motion",
             "name": "Motion",
             "description": "Some blocks about moving around.",
             "nameTranslations": {
@@ -31,6 +31,25 @@
                 "zh-cn": "一些运动的扩展积木。"
             },
             "image": "assets/img/NOname/Motion.svg",
+            "by": [
+                {
+                    "name": "Noname-awa @ Github",
+                    "link": "https://github.com/Noname-awa"
+                }
+            ]
+        },
+        {
+            "slug": "extensions/NOname/control",
+            "id": "control",
+            "name": "Control",
+            "description": "More blocks about controling.",
+            "nameTranslations": {
+                "zh-cn": "运动"
+            },
+            "descriptionTranslations": {
+                "zh-cn": "更多的控制类积木。"
+            },
+            "image": "assets/img/NOname/control.svg",
             "by": [
                 {
                     "name": "Noname-awa @ Github",
