@@ -2,15 +2,15 @@
     "extensions": [
         {
             "slug": "extensions/NOname/debuger",
-            "id": "debugger",
-            "name": "Debugger",
+            "id": "debuger",
+            "name": "Debuger",
             "description": "The breakpoint and console window allow you to enter and output content, making debugging programs more convenient.",
             "nameTranslations": {
-                "de": "Debugger",
-                "it": "Debugger",
-                "nb": "Debugger",
-                "nl": "Debugger",
-                "ru": "Debugger",
+                "de": "Debuger",
+                "it": "Debuger",
+                "nb": "Debuger",
+                "nl": "Debuger",
+                "ru": "Debuger",
                 "zh-cn": "调试器"
             },
             "descriptionTranslations": {
@@ -21,7 +21,7 @@
                 "ru": "The breakpoint and console window allow you to enter and output content, making debugging programs more convenient",
                 "zh-cn": "断点与控制台窗口，可以输入输出内容，方便调试程序。"
             },
-            "image": "assets/img/NOname/debugger.svg",
+            "image": "assets/img/NOname/debuger.svg",
             "by": [
                 {
                     "name": "Noname-awa @ Github",
