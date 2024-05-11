@@ -242,9 +242,9 @@
         if (res) {
           return res;
         } else {
-          const constructor = proto2.value.get("constructor");
+          const constructor = asValue(proto2.get("constructor"));
           if (constructor instanceof LppFunction) {
-            const v = proto2.value.get("prototype");
+            const v = asValue(proto2.get("prototype"));
             if (v instanceof LppObject) {
               if (cache.has(v))
                 return null;
@@ -260,15 +260,23 @@
     return lookupPrototypeInternal(proto, name);
   }
   function comparePrototype(prototype1, prototype2) {
-    if (prototype1 === prototype2)
-      return true;
-    const constructor1 = prototype1.value.get("constructor");
-    if (constructor1 && constructor1 instanceof LppFunction) {
-      const v = constructor1.value.get("prototype");
-      if (v instanceof LppObject)
-        return comparePrototype(v, prototype2);
+    const cache = /* @__PURE__ */ new WeakSet();
+    function comparePrototypeInternal(prototype12, prototype22) {
+      if (prototype12 === prototype22)
+        return true;
+      else if (cache.has(prototype12))
+        return false;
+      else
+        cache.add(prototype12);
+      const constructor1 = asValue(prototype12.get("constructor"));
+      if (constructor1 instanceof LppFunction) {
+        const v = asValue(constructor1.get("prototype"));
+        if (v instanceof LppObject)
+          return comparePrototype(v, prototype22);
+      }
+      return false;
     }
-    return false;
+    return comparePrototypeInternal(prototype1, prototype2);
   }
 
   // src/core/type/object.ts
@@ -1441,8 +1449,7 @@
     /**
      * @param parent Parent context.
      * @param self Self object.
-     * @param returnCallback Callback if function returns.
-     * @param exceptionCallback Callback if function throws.
+     * @param callback Callback for return / exception.
      */
     constructor(parent, self, callback) {
       super(parent, callback);
@@ -4880,10 +4887,9 @@
       });
     }
     /**
-     * Make a PromiseLike object synchronous.
-     * @param v PromiseLike object.
-     * @returns Value or PromiseLike object.
-     * @warning Non-standard.
+     * Make a ImmediatePromise object synchronous.
+     * @param v ImmediatePromise object.
+     * @returns Value or ImmediatePromise object.
      */
     static sync(v) {
       let result = void 0;
@@ -4915,7 +4921,7 @@
      *
      * @version es2023
      */
-    withResolvers() {
+    static withResolvers() {
       let resolveFn;
       let rejectFn;
       resolveFn = rejectFn = () => {
@@ -5716,7 +5722,7 @@
                         thread.lpp?.resolve(
                           new LppException(ctx.args[0] ?? new LppConstant(null))
                         );
-                        thread.stopThisScript();
+                        this.vm.runtime.sequencer.retireThread(thread);
                         resolve(new LppConstant(null));
                         return new LppReturn(new LppConstant(null));
                       })
@@ -5728,15 +5734,12 @@
                 throw new Error("lpp: unknown operand");
             }
           })();
-          if (isPromise(res)) {
-            return this.asap(
-              res.then((val) => {
-                return new Wrapper(val);
-              }),
-              util.thread
-            );
-          }
-          return new Wrapper(res);
+          return this.asap(
+            ImmediatePromise.resolve(res).then((val) => {
+              return new Wrapper(val);
+            }),
+            util.thread
+          );
         } catch (e) {
           this.handleError(e);
         }
@@ -6062,7 +6065,7 @@
                 if (!(then.value instanceof LppFunction)) {
                   lpp.detach();
                   lpp.promise?.resolve(val);
-                  return thread.stopThisScript();
+                  return this.vm.runtime.sequencer.retireThread(thread);
                 }
                 thenFn = then.value;
                 thenSelf = then.parent.deref() ?? new LppConstant(null);
@@ -6070,7 +6073,7 @@
                 if (!(then instanceof LppFunction)) {
                   lpp.detach();
                   lpp.promise?.resolve(val);
-                  return thread.stopThisScript();
+                  return this.vm.runtime.sequencer.retireThread(thread);
                 }
                 thenFn = then;
                 thenSelf = new LppConstant(null);
@@ -6082,13 +6085,13 @@
                     thenFn.apply(thenSelf, [
                       new LppFunction((ctx) => {
                         lpp.promise?.resolve(ctx.args[0] ?? new LppConstant(null));
-                        thread.stopThisScript();
+                        this.vm.runtime.sequencer.retireThread(thread);
                         resolve();
                         return new LppReturn(new LppConstant(null));
                       }),
                       new LppFunction((ctx) => {
                         lpp.promise?.reject(ctx.args[0] ?? new LppConstant(null));
-                        thread.stopThisScript();
+                        this.vm.runtime.sequencer.retireThread(thread);
                         resolve();
                         return new LppReturn(new LppConstant(null));
                       })
@@ -6099,7 +6102,7 @@
               );
             } else if (lpp instanceof LppFunctionContext) {
               lpp.resolve(new LppReturn(val));
-              return thread.stopThisScript();
+              return this.vm.runtime.sequencer.retireThread(thread);
             }
           }
           throw new LppError("useOutsideFunction");
@@ -6131,7 +6134,7 @@
           );
           if (lppThread.lpp) {
             lppThread.lpp.resolve(result);
-            return thread.stopThisScript();
+            return this.vm.runtime.sequencer.retireThread(thread);
           }
           this.handleException(result);
         } catch (e) {
