@@ -242,13 +242,16 @@
         if (res) {
           return res;
         } else {
-          const v = proto2.value.get("prototype");
-          if (v instanceof LppObject) {
-            if (cache.has(v))
-              throw new LppError("recursivePrototype");
-            else
-              cache.add(v);
-            return lookupPrototype(v, name2);
+          const constructor = proto2.value.get("constructor");
+          if (constructor instanceof LppFunction) {
+            const v = proto2.value.get("prototype");
+            if (v instanceof LppObject) {
+              if (cache.has(v))
+                return null;
+              else
+                cache.add(v);
+              return lookupPrototype(v, name2);
+            }
           }
         }
       }
@@ -259,8 +262,9 @@
   function comparePrototype(prototype1, prototype2) {
     if (prototype1 === prototype2)
       return true;
-    if (prototype1.value.has("prototype")) {
-      const v = prototype1.value.get("prototype");
+    const constructor1 = prototype1.value.get("constructor");
+    if (constructor1 && constructor1 instanceof LppFunction) {
+      const v = constructor1.value.get("prototype");
       if (v instanceof LppObject)
         return comparePrototype(v, prototype2);
     }
@@ -290,9 +294,6 @@
       if (key === "constructor") {
         return this.value.get(key) ?? global_default.Object;
       } else {
-        const res = this.value.get(key);
-        if (res || key == "prototype")
-          return new LppReference(this, key, res ?? new LppConstant(null));
         const constructor = asValue(this.get("constructor"));
         if (!(constructor instanceof LppFunction))
           throw new Error(
@@ -300,9 +301,7 @@
           );
         const proto = asValue(constructor.get("prototype"));
         if (!(proto instanceof _LppObject))
-          throw new Error(
-            "lpp: unexpected prototype -- must be a LppObject instance"
-          );
+          return new LppReference(this, key, new LppConstant(null));
         const member = lookupPrototype(proto, key);
         if (member === null)
           return new LppReference(this, key, new LppConstant(null));
@@ -334,9 +333,7 @@
         );
       const proto = asValue(constructor.get("prototype"));
       if (!(proto instanceof _LppObject))
-        throw new Error(
-          "lpp: unexpected prototype -- must be a LppObject instance"
-        );
+        return false;
       return lookupPrototype(proto, key) !== null;
     }
     /**
@@ -447,6 +444,26 @@
         }
       }
       throw new Error("lpp: unknown operand");
+    }
+    /**
+     * Create a new object, using an existing object as the prototype of the newly created object.
+     * @param prototype Prototype.
+     * @returns New object.
+     */
+    static create(prototype) {
+      return new _LppObject(
+        /* @__PURE__ */ new Map(),
+        new LppFunction(() => new LppReturn(new LppConstant(null)), prototype)
+      );
+    }
+    static assign(dest, ...args) {
+      for (const v of args) {
+        for (const [key, value] of v.value.entries()) {
+          if (key !== "constructor")
+            dest.value.set(key, value);
+        }
+      }
+      return dest;
     }
   };
 
@@ -588,12 +605,6 @@
     get(key) {
       if (key === "constructor") {
         return global_default.Function;
-      } else if (key === "prototype") {
-        const res = this.value.get(key);
-        if (res)
-          return res;
-        else
-          throw new Error("lpp: unexpected get -- prototype is null");
       } else {
         const res = this.value.get(key);
         if (res)
@@ -605,9 +616,7 @@
           );
         const proto = asValue(constructor.get("prototype"));
         if (!(proto instanceof LppObject))
-          throw new Error(
-            "lpp: unexpected prototype -- must be a LppObject instance"
-          );
+          return new LppReference(this, key, new LppConstant(null));
         const member = lookupPrototype(proto, key);
         if (member === null)
           return new LppReference(this, key, new LppConstant(null));
@@ -639,9 +648,7 @@
         );
       const proto = asValue(constructor.get("prototype"));
       if (!(proto instanceof LppObject))
-        throw new Error(
-          "lpp: unexpected prototype -- must be a LppObject instance"
-        );
+        return false;
       return lookupPrototype(proto, key) !== null;
     }
     /**
@@ -790,9 +797,7 @@
             );
           const proto = asValue(constructor.get("prototype"));
           if (!(proto instanceof LppObject))
-            throw new Error(
-              "lpp: unexpected prototype -- must be a LppObject instance"
-            );
+            return new LppReference(this, key, new LppConstant(null));
           const member = lookupPrototype(proto, key);
           if (member === null)
             throw new LppError("invalidIndex");
@@ -832,9 +837,7 @@
         );
       const proto = asValue(constructor.get("prototype"));
       if (!(proto instanceof LppObject))
-        throw new Error(
-          "lpp: unexpected prototype -- must be a LppObject instance"
-        );
+        return false;
       return lookupPrototype(proto, key) !== null;
     }
     /**
@@ -1000,9 +1003,7 @@
           );
         const proto = asValue(constructor.get("prototype"));
         if (!(proto instanceof LppObject))
-          throw new Error(
-            "lpp: unexpected prototype -- must be a LppObject instance"
-          );
+          return new _LppConstant(null);
         const member = lookupPrototype(proto, key);
         if (member === null)
           return new _LppConstant(null);
@@ -1032,9 +1033,7 @@
         );
       const proto = asValue(constructor.get("prototype"));
       if (!(proto instanceof LppObject))
-        throw new Error(
-          "lpp: unexpected prototype -- must be a LppObject instance"
-        );
+        return false;
       return lookupPrototype(proto, key) !== null;
     }
     /**
@@ -1704,7 +1703,7 @@
 
   // src/core/global/type/Object.ts
   function Object_default(global2) {
-    global2.Object = LppFunction.native(({ args }) => {
+    const Object2 = global2.Object = LppFunction.native(({ args }) => {
       function convertToObject(args2) {
         if (args2.length < 1)
           return new LppObject();
@@ -1712,6 +1711,18 @@
       }
       return new LppReturn(convertToObject(args));
     }, new LppObject(/* @__PURE__ */ new Map()));
+    Object2.set(
+      "create",
+      LppFunction.native(({ args }) => {
+        return async(function* () {
+          if (args.length !== 1 || !(args[0] instanceof LppObject))
+            return raise(
+              yield global2.IllegalInvocationError.construct([])
+            );
+          return new LppReturn(LppObject.create(args[0]));
+        });
+      })
+    );
   }
 
   // src/core/global/type/String.ts
@@ -1750,6 +1761,9 @@
 
   // src/core/global/type/Function.ts
   function Function_default(global2) {
+    const base = asValue(global2.Object.get("prototype"));
+    if (!(base instanceof LppObject))
+      throw new Error("lpp: unexpected prototype -- should be Object");
     global2.Function = LppFunction.native(
       ({ args }) => {
         if (args.length < 1)
@@ -1766,28 +1780,30 @@
           );
         });
       },
-      new LppObject(
-        /* @__PURE__ */ new Map([
-          ["prototype", asValue(global2.Object.get("prototype"))],
-          [
-            "bind",
-            LppFunction.native(({ self, args }) => {
-              if (!(self instanceof LppFunction) || args.length < 1) {
-                return async(function* () {
-                  return raise(
-                    yield global2.IllegalInvocationError.construct([])
-                  );
-                });
-              }
-              const selfArg = args[0];
-              return new LppReturn(
-                new LppFunction((ctx) => {
-                  return self.apply(selfArg, ctx.args);
-                })
-              );
-            })
-          ]
-        ])
+      LppObject.assign(
+        LppObject.create(base),
+        new LppObject(
+          /* @__PURE__ */ new Map([
+            [
+              "bind",
+              LppFunction.native(({ self, args }) => {
+                if (!(self instanceof LppFunction) || args.length < 1) {
+                  return async(function* () {
+                    return raise(
+                      yield global2.IllegalInvocationError.construct([])
+                    );
+                  });
+                }
+                const selfArg = args[0];
+                return new LppReturn(
+                  new LppFunction((ctx) => {
+                    return self.apply(selfArg, ctx.args);
+                  })
+                );
+              })
+            ]
+          ])
+        )
       )
     );
   }
@@ -1937,29 +1953,30 @@
 
   // src/core/global/error/IllegalInvocationError.ts
   function IllegalInvocationError_default(global2) {
-    const IllegalInvocationError = global2.IllegalInvocationError = LppFunction.native(
-      ({ self, args }) => {
-        if (self.instanceof(IllegalInvocationError)) {
-          return async(function* () {
-            const v = yield global2.Error.apply(self, args);
-            if (v instanceof LppException)
-              return v;
-            return new LppReturn(new LppConstant(null));
-          });
-        } else {
-          return async(function* () {
-            return raise(yield IllegalInvocationError.construct([]));
-          });
-        }
-      },
-      new LppObject(
-        /* @__PURE__ */ new Map([["prototype", asValue(global2.Error.get("prototype"))]])
-      )
-    );
+    const base = asValue(global2.Error.get("prototype"));
+    if (!(base instanceof LppObject))
+      throw new Error("lpp: unexpected prototype -- should be Object");
+    const IllegalInvocationError = global2.IllegalInvocationError = LppFunction.native(({ self, args }) => {
+      if (self.instanceof(IllegalInvocationError)) {
+        return async(function* () {
+          const v = yield global2.Error.apply(self, args);
+          if (v instanceof LppException)
+            return v;
+          return new LppReturn(new LppConstant(null));
+        });
+      } else {
+        return async(function* () {
+          return raise(yield IllegalInvocationError.construct([]));
+        });
+      }
+    }, LppObject.create(base));
   }
 
   // src/core/global/error/SyntaxError.ts
   function SyntaxError_default(global2) {
+    const base = asValue(global2.Error.get("prototype"));
+    if (!(base instanceof LppObject))
+      throw new Error("lpp: unexpected prototype -- should be Object");
     const SyntaxError = global2.SyntaxError = LppFunction.native(
       ({ self, args }) => {
         if (self.instanceof(SyntaxError)) {
@@ -1977,11 +1994,7 @@
           });
         }
       },
-      new LppObject(
-        /* @__PURE__ */ new Map([
-          ["prototype", asValue(global2.Error.get("prototype"))]
-        ])
-      )
+      LppObject.create(base)
     );
   }
 
@@ -4558,6 +4571,7 @@
     attachType2(Global.String, ["value?"]);
     attachType2(Global.Array, ["value?"]);
     attachType2(Global.Object, ["value?"]);
+    attachType2(Global.Object.get("create"), ["proto"]);
     attachType2(Global.Function, ["value?"]);
     attachType2(Global.Array.get("prototype").get("map"), ["predict"]);
     attachType2(Global.Array.get("prototype").get("every"), ["predict"]);
