@@ -4,7 +4,7 @@
             "slug": "extensions/NOname/debuger",
             "id": "debuger",
             "name": "Debuger",
-            "description": "The breakpoint and console window allow you to enter and output content, making debugging programs more convenient",
+            "description": "A debuger that can do many nice things.",
             "nameTranslations": {
                 "zh-cn": "调试器"
             },
@@ -44,7 +44,7 @@
             "name": "Control",
             "description": "More blocks about controling.",
             "nameTranslations": {
-                "zh-cn": "运动"
+                "zh-cn": "控制"
             },
             "descriptionTranslations": {
                 "zh-cn": "更多的控制类积木。"
