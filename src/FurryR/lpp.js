@@ -36,7 +36,7 @@
     async: () => async,
     ffi: () => ffi_exports,
     isPromise: () => isPromise,
-    raise: () => raise
+    raise: () => raise,
   });
 
   // src/core/type/base.ts
@@ -50,8 +50,7 @@
       this.id = id;
     }
   };
-  var LppValue = class {
-  };
+  var LppValue = class {};
 
   // src/core/helper/cast.ts
   function asValue(obj) {
@@ -59,8 +58,7 @@
   }
   function asBoolean(value) {
     if (value instanceof LppConstant) {
-      if (value.value === null)
-        return false;
+      if (value.value === null) return false;
       switch (typeof value.value) {
         case "number":
           return value.value !== 0;
@@ -82,7 +80,11 @@
 
   // src/core/helper/promise.ts
   function isPromise(value) {
-    return typeof value === "object" && value !== null && typeof value.then === "function";
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      typeof value.then === "function"
+    );
   }
   function async(fn, ...args) {
     const generator = fn(...args);
@@ -98,8 +100,7 @@
 
   // src/core/helper/math.ts
   function mathOp(lhs, op, rhs) {
-    if (!(lhs instanceof LppConstant && rhs instanceof LppConstant))
-      return NaN;
+    if (!(lhs instanceof LppConstant && rhs instanceof LppConstant)) return NaN;
     const left = typeof lhs.value === "boolean" ? +lhs.value : lhs.value;
     const right = typeof rhs.value === "boolean" ? +rhs.value : rhs.value;
     const math = /* @__PURE__ */ new Map([
@@ -113,11 +114,10 @@
       [">>>", (a, b) => a >>> b],
       ["&", (a, b) => a & b],
       ["|", (a, b) => a | b],
-      ["^", (a, b) => a ^ b]
+      ["^", (a, b) => a ^ b],
     ]);
     const fn = math.get(op);
-    if (!fn)
-      throw new Error("lpp: not implemented");
+    if (!fn) throw new Error("lpp: not implemented");
     return fn(left, right);
   }
   function equal(lhs, rhs) {
@@ -129,8 +129,7 @@
     function compareInternal(fn2, lhs2, rhs2) {
       if (lhs2 instanceof LppConstant) {
         if (rhs2 instanceof LppConstant) {
-          if (lhs2.value === null || rhs2.value === null)
-            return false;
+          if (lhs2.value === null || rhs2.value === null) return false;
           switch (typeof lhs2.value) {
             case "boolean": {
               switch (typeof rhs2.value) {
@@ -189,11 +188,10 @@
       [">", (a, b) => a > b],
       ["<", (a, b) => a < b],
       [">=", (a, b) => a >= b],
-      ["<=", (a, b) => a <= b]
+      ["<=", (a, b) => a <= b],
     ]);
     const fn = math.get(op);
-    if (!fn)
-      throw new Error("lpp: not implemented");
+    if (!fn) throw new Error("lpp: not implemented");
     return compareInternal(fn, lhs, rhs);
   }
 
@@ -219,9 +217,11 @@
               new LppFunction(({ args }) => {
                 reject(args[0] ?? new LppConstant(null));
                 return new LppReturn(new LppConstant(null));
-              })
+              }),
             ]);
-            return res instanceof LppException ? void reject(res.value) : void 0;
+            return res instanceof LppException
+              ? void reject(res.value)
+              : void 0;
           });
         }
       }
@@ -244,13 +244,11 @@
         } else {
           const constructor = asValue(proto2.get("constructor"));
           if (constructor instanceof LppFunction) {
-            const v = asValue(proto2.get("prototype"));
+            const v = asValue(constructor.get("prototype"));
             if (v instanceof LppObject) {
-              if (cache.has(v))
-                return null;
-              else
-                cache.add(v);
-              return lookupPrototype(v, name2);
+              if (cache.has(v)) return null;
+              else cache.add(v);
+              return lookupPrototypeInternal(v, name2);
             }
           }
         }
@@ -262,17 +260,14 @@
   function comparePrototype(prototype1, prototype2) {
     const cache = /* @__PURE__ */ new WeakSet();
     function comparePrototypeInternal(prototype12, prototype22) {
-      if (prototype12 === prototype22)
-        return true;
-      else if (cache.has(prototype12))
-        return false;
-      else
-        cache.add(prototype12);
+      if (prototype12 === prototype22) return true;
+      else if (cache.has(prototype12)) return false;
+      else cache.add(prototype12);
       const constructor1 = asValue(prototype12.get("constructor"));
       if (constructor1 instanceof LppFunction) {
         const v = asValue(constructor1.get("prototype"));
         if (v instanceof LppObject)
-          return comparePrototype(v, prototype22);
+          return comparePrototypeInternal(v, prototype22);
       }
       return false;
     }
@@ -290,8 +285,7 @@
       super();
       this.value = value;
       this.value = value ?? /* @__PURE__ */ new Map();
-      if (constructor)
-        this.value.set("constructor", constructor);
+      if (constructor) this.value.set("constructor", constructor);
     }
     /**
      * Get a value.
@@ -303,8 +297,7 @@
         return this.value.get(key) ?? global_default.Object;
       } else {
         const res = this.value.get(key);
-        if (res)
-          return new LppReference(this, key, res);
+        if (res) return new LppReference(this, key, res);
         const constructor = asValue(this.get("constructor"));
         if (!(constructor instanceof LppFunction))
           throw new Error(
@@ -335,16 +328,14 @@
      * @returns Whether the value exists.
      */
     has(key) {
-      if (key === "constructor" || this.value.has(key))
-        return true;
+      if (key === "constructor" || this.value.has(key)) return true;
       const constructor = asValue(this.get("constructor"));
       if (!(constructor instanceof LppFunction))
         throw new Error(
           "lpp: unexpected constructor -- must be a LppFunction instance"
         );
       const proto = asValue(constructor.get("prototype"));
-      if (!(proto instanceof _LppObject))
-        return false;
+      if (!(proto instanceof _LppObject)) return false;
       return lookupPrototype(proto, key) !== null;
     }
     /**
@@ -387,7 +378,10 @@
           }
           case "+": {
             if (rhs instanceof _LppObject && !(rhs instanceof LppFunction)) {
-              if (this.value.has("constructor") || rhs.value.has("constructor")) {
+              if (
+                this.value.has("constructor") ||
+                rhs.value.has("constructor")
+              ) {
                 return new LppConstant(NaN);
               }
               const ret = new _LppObject();
@@ -470,8 +464,7 @@
     static assign(dest, ...args) {
       for (const v of args) {
         for (const [key, value] of v.value.entries()) {
-          if (key !== "constructor")
-            dest.value.set(key, value);
+          if (key !== "constructor") dest.value.set(key, value);
         }
       }
       return dest;
@@ -496,13 +489,15 @@
           (value) => {
             if (value instanceof LppValue) {
               if (resolveFn) {
-                return async(function* () {
-                  return processThenReturn(
-                    yield resolveFn.apply(this, [value]),
-                    resolve,
-                    reject
-                  );
-                }.bind(this));
+                return async(
+                  function* () {
+                    return processThenReturn(
+                      yield resolveFn.apply(this, [value]),
+                      resolve,
+                      reject
+                    );
+                  }.bind(this)
+                );
               } else {
                 return processThenReturn(new LppReturn(value), resolve, reject);
               }
@@ -512,13 +507,15 @@
           (err) => {
             if (err instanceof LppValue) {
               if (rejectFn) {
-                return async(function* () {
-                  return processThenReturn(
-                    yield rejectFn.apply(this, [err]),
-                    resolve,
-                    reject
-                  );
-                }.bind(this));
+                return async(
+                  function* () {
+                    return processThenReturn(
+                      yield rejectFn.apply(this, [err]),
+                      resolve,
+                      reject
+                    );
+                  }.bind(this)
+                );
               } else {
                 return reject(err);
               }
@@ -538,13 +535,15 @@
       return _LppPromise.generate((resolve, reject) => {
         this.pm.catch((err) => {
           if (err instanceof LppValue) {
-            return async(function* () {
-              return processThenReturn(
-                yield rejectFn.apply(this, [err]),
-                resolve,
-                reject
-              );
-            }.bind(this));
+            return async(
+              function* () {
+                return processThenReturn(
+                  yield rejectFn.apply(this, [err]),
+                  resolve,
+                  reject
+                );
+              }.bind(this)
+            );
           }
           throw err;
         });
@@ -618,8 +617,7 @@
         return global_default.Function;
       } else {
         const res = this.value.get(key);
-        if (res)
-          return new LppReference(this, key, res);
+        if (res) return new LppReference(this, key, res);
         const constructor = asValue(this.get("constructor"));
         if (!(constructor instanceof _LppFunction))
           throw new Error(
@@ -650,16 +648,14 @@
      * @returns Whether the value exists.
      */
     has(key) {
-      if (key === "constructor" || this.value.has(key))
-        return true;
+      if (key === "constructor" || this.value.has(key)) return true;
       const constructor = asValue(this.get("constructor"));
       if (!(constructor instanceof _LppFunction))
         throw new Error(
           "lpp: unexpected constructor -- must be a LppFunction instance"
         );
       const proto = asValue(constructor.get("prototype"));
-      if (!(proto instanceof LppObject))
-        return false;
+      if (!(proto instanceof LppObject)) return false;
       return lookupPrototype(proto, key) !== null;
     }
     /**
@@ -755,16 +751,26 @@
      * @returns Return value.
      */
     construct(args) {
-      if (this === global_default.Number || this === global_default.String || this === global_default.Boolean || this === global_default.Array || this === global_default.Function || this === global_default.Object)
+      if (
+        this === global_default.Number ||
+        this === global_default.String ||
+        this === global_default.Boolean ||
+        this === global_default.Array ||
+        this === global_default.Function ||
+        this === global_default.Object
+      )
         return this.apply(new LppConstant(null), args);
-      const obj = this === global_default.Promise ? new LppPromise(new Promise(() => {
-      })) : new LppObject(/* @__PURE__ */ new Map(), this);
-      return async(function* () {
-        const result = yield this.apply(obj, args);
-        if (result instanceof LppException)
-          return result;
-        return new LppReturn(obj);
-      }.bind(this));
+      const obj =
+        this === global_default.Promise
+          ? new LppPromise(new Promise(() => {}))
+          : new LppObject(/* @__PURE__ */ new Map(), this);
+      return async(
+        function* () {
+          const result = yield this.apply(obj, args);
+          if (result instanceof LppException) return result;
+          return new LppReturn(obj);
+        }.bind(this)
+      );
     }
     /**
      * @returns toString for visualReport.
@@ -796,10 +802,8 @@
         const idx = parseInt(key, 10);
         if (idx >= 0) {
           const res = this.value[idx];
-          if (res)
-            return new LppReference(this, key, res);
-          else
-            return new LppReference(this, key, new LppConstant(null));
+          if (res) return new LppReference(this, key, res);
+          else return new LppReference(this, key, new LppConstant(null));
         } else {
           const constructor = asValue(this.get("constructor"));
           if (!(constructor instanceof LppFunction))
@@ -810,8 +814,7 @@
           if (!(proto instanceof LppObject))
             return new LppReference(this, key, new LppConstant(null));
           const member = lookupPrototype(proto, key);
-          if (member === null)
-            throw new LppError("invalidIndex");
+          if (member === null) throw new LppError("invalidIndex");
           return new LppReference(this, key, member);
         }
       }
@@ -827,8 +830,7 @@
       if (idx >= 0) {
         this.value[idx] = value;
         return new LppReference(this, key, value);
-      } else
-        throw new LppError("invalidIndex");
+      } else throw new LppError("invalidIndex");
     }
     /**
      * Detect whether a value exists.
@@ -836,19 +838,16 @@
      * @returns Whether the value exists.
      */
     has(key) {
-      if (key === "constructor")
-        return true;
+      if (key === "constructor") return true;
       const idx = parseInt(key, 10);
-      if (idx >= 0 && idx in this.value)
-        return true;
+      if (idx >= 0 && idx in this.value) return true;
       const constructor = asValue(this.get("constructor"));
       if (!(constructor instanceof LppFunction))
         throw new Error(
           "lpp: unexpected constructor -- must be a LppFunction instance"
         );
       const proto = asValue(constructor.get("prototype"));
-      if (!(proto instanceof LppObject))
-        return false;
+      if (!(proto instanceof LppObject)) return false;
       return lookupPrototype(proto, key) !== null;
     }
     /**
@@ -896,8 +895,12 @@
             return new LppConstant(NaN);
           }
           case "*": {
-            if (rhs instanceof LppConstant && (typeof rhs.value === "boolean" || typeof rhs.value === "number")) {
-              const time = typeof rhs.value === "boolean" ? +rhs.value : rhs.value;
+            if (
+              rhs instanceof LppConstant &&
+              (typeof rhs.value === "boolean" || typeof rhs.value === "number")
+            ) {
+              const time =
+                typeof rhs.value === "boolean" ? +rhs.value : rhs.value;
               if (Number.isInteger(time)) {
                 const ret = new _LppArray();
                 for (let i = 0; i < time; i++) {
@@ -986,8 +989,7 @@
      * @returns Child object.
      */
     get(key) {
-      if (this.value === null)
-        throw new LppError("accessOfNull");
+      if (this.value === null) throw new LppError("accessOfNull");
       if (key === "constructor") {
         switch (typeof this.value) {
           case "string":
@@ -1013,11 +1015,9 @@
             "lpp: unexpected constructor -- must be a LppFunction instance"
           );
         const proto = asValue(constructor.get("prototype"));
-        if (!(proto instanceof LppObject))
-          return new _LppConstant(null);
+        if (!(proto instanceof LppObject)) return new _LppConstant(null);
         const member = lookupPrototype(proto, key);
-        if (member === null)
-          return new _LppConstant(null);
+        if (member === null) return new _LppConstant(null);
         return new LppReference(this, key, member);
       }
     }
@@ -1033,26 +1033,22 @@
      * @returns Whether the value exists.
      */
     has(key) {
-      if (this.value === null)
-        throw new LppError("accessOfNull");
-      if (key === "constructor")
-        return true;
+      if (this.value === null) throw new LppError("accessOfNull");
+      if (key === "constructor") return true;
       const constructor = asValue(this.get("constructor"));
       if (!(constructor instanceof LppFunction))
         throw new Error(
           "lpp: unexpected constructor -- must be a LppFunction instance"
         );
       const proto = asValue(constructor.get("prototype"));
-      if (!(proto instanceof LppObject))
-        return false;
+      if (!(proto instanceof LppObject)) return false;
       return lookupPrototype(proto, key) !== null;
     }
     /**
      * LppConstant instances are not able to set properties.
      */
     delete() {
-      if (this.value === null)
-        throw new LppError("accessOfNull");
+      if (this.value === null) throw new LppError("accessOfNull");
       throw new LppError("assignOfConstant");
     }
     /**
@@ -1061,8 +1057,7 @@
      * @returns Whether the value is constructed from fn.
      */
     instanceof(fn) {
-      if (this.value === null)
-        return false;
+      if (this.value === null) return false;
       switch (typeof this.value) {
         case "string":
           return fn === global_default.String;
@@ -1102,16 +1097,27 @@
           case "*": {
             if (this.value !== null) {
               if (rhs instanceof _LppConstant) {
-                if (typeof this.value === "string" && typeof rhs.value === "number") {
+                if (
+                  typeof this.value === "string" &&
+                  typeof rhs.value === "number"
+                ) {
                   if (Number.isInteger(rhs.value))
                     return new _LppConstant(this.value.repeat(rhs.value));
-                } else if (typeof this.value === "number" && typeof rhs.value === "string") {
+                } else if (
+                  typeof this.value === "number" &&
+                  typeof rhs.value === "string"
+                ) {
                   if (Number.isInteger(this.value))
                     return new _LppConstant(rhs.value.repeat(this.value));
                 }
                 return new _LppConstant(mathOp(this, op, rhs));
-              } else if (rhs instanceof LppArray && (typeof this.value === "boolean" || typeof this.value === "number")) {
-                const time = typeof this.value === "boolean" ? +this.value : this.value;
+              } else if (
+                rhs instanceof LppArray &&
+                (typeof this.value === "boolean" ||
+                  typeof this.value === "number")
+              ) {
+                const time =
+                  typeof this.value === "boolean" ? +this.value : this.value;
                 if (Number.isInteger(time)) {
                   const ret = new LppArray();
                   for (let i = 0; i < time; i++) {
@@ -1139,7 +1145,9 @@
           case "||": {
             const left = asBoolean(this);
             const right = asBoolean(rhs);
-            return new _LppConstant(op === "&&" ? left && right : left || right);
+            return new _LppConstant(
+              op === "&&" ? left && right : left || right
+            );
           }
           case "-":
           case "**":
@@ -1151,7 +1159,13 @@
           case "&":
           case "|":
           case "^": {
-            if (!(rhs instanceof _LppConstant) || this.value === null || rhs.value === null || typeof this.value === "string" || typeof rhs.value === "string")
+            if (
+              !(rhs instanceof _LppConstant) ||
+              this.value === null ||
+              rhs.value === null ||
+              typeof this.value === "string" ||
+              typeof rhs.value === "string"
+            )
               return new _LppConstant(NaN);
             return new _LppConstant(mathOp(this, op, rhs));
           }
@@ -1168,12 +1182,24 @@
             throw new LppError("assignOfConstant");
           }
           case "+": {
-            if (!(typeof this.value === "boolean" || typeof this.value === "number" || typeof this.value === "string"))
+            if (
+              !(
+                typeof this.value === "boolean" ||
+                typeof this.value === "number" ||
+                typeof this.value === "string"
+              )
+            )
               return new _LppConstant(NaN);
             return new _LppConstant(+this.value);
           }
           case "-": {
-            if (!(typeof this.value === "boolean" || typeof this.value === "number" || typeof this.value === "string"))
+            if (
+              !(
+                typeof this.value === "boolean" ||
+                typeof this.value === "number" ||
+                typeof this.value === "string"
+              )
+            )
               return new _LppConstant(NaN);
             return new _LppConstant(-this.value);
           }
@@ -1181,11 +1207,16 @@
             return new _LppConstant(!asBoolean(this));
           }
           case "~": {
-            if (!(typeof this.value === "boolean" || typeof this.value === "number" || typeof this.value === "string"))
+            if (
+              !(
+                typeof this.value === "boolean" ||
+                typeof this.value === "number" ||
+                typeof this.value === "string"
+              )
+            )
               return new _LppConstant(NaN);
             const v = +this.value;
-            if (isNaN(v))
-              return new _LppConstant(NaN);
+            if (isNaN(v)) return new _LppConstant(NaN);
             return new _LppConstant(~v);
           }
         }
@@ -1243,10 +1274,8 @@
      */
     delete(key) {
       const parent = this.parent.deref();
-      if (!parent)
-        throw new LppError("assignOfConstant");
-      if (!key)
-        return parent.delete(this.name);
+      if (!parent) throw new LppError("assignOfConstant");
+      if (!key) return parent.delete(this.name);
       return this.value.delete(key);
     }
     /**
@@ -1264,8 +1293,7 @@
      */
     assign(value) {
       const parent = this.parent.deref();
-      if (!parent)
-        throw new LppError("assignOfConstant");
+      if (!parent) throw new LppError("assignOfConstant");
       parent.set(this.name, value);
       this.value = value;
       return this;
@@ -1326,8 +1354,7 @@
   };
   var LppTraceback;
   ((LppTraceback3) => {
-    class Base {
-    }
+    class Base {}
     LppTraceback3.Base = Base;
     class NativeFn extends Base {
       /**
@@ -1423,8 +1450,7 @@
      */
     resolve(value) {
       this.callback(value);
-      this.callback = () => {
-      };
+      this.callback = () => {};
     }
     /**
      * Get variable.
@@ -1432,10 +1458,8 @@
      * @returns Variable result.
      */
     get(name) {
-      if (this.closure.has(name))
-        return this.closure.get(name);
-      else
-        return this.parent ? this.parent.get(name) : this.closure.get(name);
+      if (this.closure.has(name)) return this.closure.get(name);
+      else return this.parent ? this.parent.get(name) : this.closure.get(name);
     }
     /**
      * Unwind to a parent function context.
@@ -1479,7 +1503,7 @@
         this.promise = {
           promise: pm,
           resolve: resolveFn,
-          reject: rejectFn
+          reject: rejectFn,
         };
         this.resolve(new LppReturn(new LppPromise(pm)));
       }
@@ -1491,8 +1515,7 @@
     global2.Array = LppFunction.native(
       ({ args }) => {
         function convertToArray(args2) {
-          if (args2.length < 1)
-            return new LppArray();
+          if (args2.length < 1) return new LppArray();
           if (args2.length === 1 && args2[0] instanceof LppArray) {
             return args2[0];
           }
@@ -1513,7 +1536,7 @@
                 });
               }
               return new LppReturn(new LppConstant(self.value.length));
-            })
+            }),
           ],
           [
             "slice",
@@ -1526,7 +1549,10 @@
                 }
                 const start = args[0];
                 const end = args[0];
-                if (start && !(start instanceof LppConstant) || end && !(end instanceof LppConstant)) {
+                if (
+                  (start && !(start instanceof LppConstant)) ||
+                  (end && !(end instanceof LppConstant))
+                ) {
                   return raise(
                     yield global2.IllegalInvocationError.construct([])
                   );
@@ -1540,13 +1566,16 @@
                   )
                 );
               });
-            })
+            }),
           ],
           [
             "map",
             LppFunction.native(({ self, args }) => {
               return async(function* () {
-                if (!(self instanceof LppArray) || !(args[0] instanceof LppFunction)) {
+                if (
+                  !(self instanceof LppArray) ||
+                  !(args[0] instanceof LppFunction)
+                ) {
                   return raise(
                     yield global2.IllegalInvocationError.construct([])
                   );
@@ -1556,22 +1585,23 @@
                 for (const [k, v] of self.value.entries()) {
                   const res = yield predict.apply(self, [
                     v ?? new LppConstant(null),
-                    new LppConstant(k)
+                    new LppConstant(k),
                   ]);
-                  if (res instanceof LppException)
-                    return res;
-                  else
-                    result.value.push(res.value);
+                  if (res instanceof LppException) return res;
+                  else result.value.push(res.value);
                 }
                 return new LppReturn(result);
               });
-            })
+            }),
           ],
           [
             "every",
             LppFunction.native(({ self, args }) => {
               return async(function* () {
-                if (!(self instanceof LppArray) || !(args[0] instanceof LppFunction)) {
+                if (
+                  !(self instanceof LppArray) ||
+                  !(args[0] instanceof LppFunction)
+                ) {
                   return raise(
                     yield global2.IllegalInvocationError.construct([])
                   );
@@ -1580,23 +1610,25 @@
                 for (const [k, v] of self.value.entries()) {
                   const res = yield predict.apply(self, [
                     v ?? new LppConstant(null),
-                    new LppConstant(k)
+                    new LppConstant(k),
                   ]);
-                  if (res instanceof LppException)
-                    return res;
+                  if (res instanceof LppException) return res;
                   else if (!asBoolean(res.value)) {
                     return new LppReturn(new LppConstant(false));
                   }
                 }
                 return new LppReturn(new LppConstant(true));
               });
-            })
+            }),
           ],
           [
             "any",
             LppFunction.native(({ self, args }) => {
               return async(function* () {
-                if (!(self instanceof LppArray) || !(args[0] instanceof LppFunction)) {
+                if (
+                  !(self instanceof LppArray) ||
+                  !(args[0] instanceof LppFunction)
+                ) {
                   return raise(
                     yield global2.IllegalInvocationError.construct([])
                   );
@@ -1605,18 +1637,17 @@
                 for (const [k, v] of self.value.entries()) {
                   const res = yield predict.apply(self, [
                     v ?? new LppConstant(null),
-                    new LppConstant(k)
+                    new LppConstant(k),
                   ]);
-                  if (res instanceof LppException)
-                    return res;
+                  if (res instanceof LppException) return res;
                   else if (asBoolean(res.value)) {
                     return new LppReturn(new LppConstant(true));
                   }
                 }
                 return new LppReturn(new LppConstant(false));
               });
-            })
-          ]
+            }),
+          ],
         ])
       )
     );
@@ -1625,8 +1656,7 @@
   // src/core/global/type/Boolean.ts
   function Boolean_default(global2) {
     global2.Boolean = LppFunction.native(({ args }) => {
-      if (args.length < 1)
-        return new LppReturn(new LppConstant(false));
+      if (args.length < 1) return new LppReturn(new LppConstant(false));
       return new LppReturn(new LppConstant(asBoolean(args[0])));
     }, new LppObject(/* @__PURE__ */ new Map()));
   }
@@ -1635,12 +1665,10 @@
   function Number_default(global2) {
     global2.Number = LppFunction.native(({ args }) => {
       function convertToNumber(args2) {
-        if (args2.length < 1)
-          return new LppConstant(0);
+        if (args2.length < 1) return new LppConstant(0);
         const v = args2[0];
         if (v instanceof LppConstant) {
-          if (v === new LppConstant(null))
-            return new LppConstant(0);
+          if (v === new LppConstant(null)) return new LppConstant(0);
           switch (typeof v.value) {
             case "string":
               return new LppConstant(globalThis.Number(v.value));
@@ -1659,12 +1687,18 @@
       return new LppReturn(convertToNumber(args));
     }, new LppObject(/* @__PURE__ */ new Map()));
     global2.Number.set("EPLISON", new LppConstant(globalThis.Number.EPSILON));
-    global2.Number.set("MAX_VALUE", new LppConstant(globalThis.Number.MAX_VALUE));
+    global2.Number.set(
+      "MAX_VALUE",
+      new LppConstant(globalThis.Number.MAX_VALUE)
+    );
     global2.Number.set(
       "MAX_SAFE_INTEGER",
       new LppConstant(globalThis.Number.MAX_SAFE_INTEGER)
     );
-    global2.Number.set("MIN_VALUE", new LppConstant(globalThis.Number.MIN_VALUE));
+    global2.Number.set(
+      "MIN_VALUE",
+      new LppConstant(globalThis.Number.MIN_VALUE)
+    );
     global2.Number.set(
       "MIN_SAFE_INTEGER",
       new LppConstant(globalThis.Number.MIN_SAFE_INTEGER)
@@ -1674,7 +1708,9 @@
       LppFunction.native(({ args }) => {
         return new LppReturn(
           new LppConstant(
-            args.length > 0 && args[0] instanceof LppConstant && globalThis.Number.isNaN(args[0].value)
+            args.length > 0 &&
+              args[0] instanceof LppConstant &&
+              globalThis.Number.isNaN(args[0].value)
           )
         );
       })
@@ -1684,7 +1720,9 @@
       LppFunction.native(({ args }) => {
         return new LppReturn(
           new LppConstant(
-            args.length > 0 && args[0] instanceof LppConstant && globalThis.Number.isFinite(args[0].value)
+            args.length > 0 &&
+              args[0] instanceof LppConstant &&
+              globalThis.Number.isFinite(args[0].value)
           )
         );
       })
@@ -1694,7 +1732,9 @@
       LppFunction.native(({ args }) => {
         return new LppReturn(
           new LppConstant(
-            args.length > 0 && args[0] instanceof LppConstant && globalThis.Number.isSafeInteger(args[0].value)
+            args.length > 0 &&
+              args[0] instanceof LppConstant &&
+              globalThis.Number.isSafeInteger(args[0].value)
           )
         );
       })
@@ -1704,7 +1744,9 @@
       LppFunction.native(({ args }) => {
         return new LppReturn(
           new LppConstant(
-            args.length > 0 && args[0] instanceof LppConstant && globalThis.Number.isSafeInteger(args[0].value)
+            args.length > 0 &&
+              args[0] instanceof LppConstant &&
+              globalThis.Number.isSafeInteger(args[0].value)
           )
         );
       })
@@ -1713,22 +1755,19 @@
 
   // src/core/global/type/Object.ts
   function Object_default(global2) {
-    const Object2 = global2.Object = LppFunction.native(({ args }) => {
+    const Object2 = (global2.Object = LppFunction.native(({ args }) => {
       function convertToObject(args2) {
-        if (args2.length < 1)
-          return new LppObject();
+        if (args2.length < 1) return new LppObject();
         return args2[0];
       }
       return new LppReturn(convertToObject(args));
-    }, new LppObject(/* @__PURE__ */ new Map()));
+    }, new LppObject(/* @__PURE__ */ new Map())));
     Object2.set(
       "create",
       LppFunction.native(({ args }) => {
         return async(function* () {
           if (args.length !== 1 || !(args[0] instanceof LppObject))
-            return raise(
-              yield global2.IllegalInvocationError.construct([])
-            );
+            return raise(yield global2.IllegalInvocationError.construct([]));
           return new LppReturn(LppObject.create(args[0]));
         });
       })
@@ -1740,8 +1779,7 @@
     global2.String = LppFunction.native(
       ({ args }) => {
         function convertToString(args2) {
-          if (args2.length < 1)
-            return new LppConstant("");
+          if (args2.length < 1) return new LppConstant("");
           const v = args2[0];
           return new LppConstant(v.toString());
         }
@@ -1752,18 +1790,19 @@
           [
             "length",
             LppFunction.native(({ self }) => {
-              if (self instanceof LppConstant && typeof self.value === "string") {
+              if (
+                self instanceof LppConstant &&
+                typeof self.value === "string"
+              ) {
                 return new LppReturn(new LppConstant(self.value.length));
               }
               return async(function* () {
                 return raise(
-                  yield global2.IllegalInvocationError.construct(
-                    []
-                  )
+                  yield global2.IllegalInvocationError.construct([])
                 );
               });
-            })
-          ]
+            }),
+          ],
         ])
       )
     );
@@ -1782,12 +1821,9 @@
               return new LppReturn(new LppConstant(null));
             })
           );
-        if (args[0] instanceof LppFunction)
-          return new LppReturn(args[0]);
+        if (args[0] instanceof LppFunction) return new LppReturn(args[0]);
         return async(function* () {
-          return raise(
-            yield global2.IllegalInvocationError.construct([])
-          );
+          return raise(yield global2.IllegalInvocationError.construct([]));
         });
       },
       LppObject.assign(
@@ -1810,8 +1846,8 @@
                     return self.apply(selfArg, ctx.args);
                   })
                 );
-              })
-            ]
+              }),
+            ],
           ])
         )
       )
@@ -1826,7 +1862,11 @@
   function Promise_default(global2) {
     global2.Promise = LppFunction.native(
       ({ self, args }) => {
-        if (self instanceof LppPromise && args.length > 0 && args[0] instanceof LppFunction) {
+        if (
+          self instanceof LppPromise &&
+          args.length > 0 &&
+          args[0] instanceof LppFunction
+        ) {
           const fn = args[0];
           return async(function* () {
             return processPromise(
@@ -1847,7 +1887,7 @@
                     new LppFunction(({ args: args2 }) => {
                       reject(args2[0] ?? new LppConstant(null));
                       return new LppReturn(new LppConstant(null));
-                    })
+                    }),
                   ]);
                   return void 0;
                 });
@@ -1857,9 +1897,7 @@
         } else {
           return async(function* () {
             return raise(
-              yield global2.IllegalInvocationErrorError.construct(
-                []
-              )
+              yield global2.IllegalInvocationErrorError.construct([])
             );
           });
         }
@@ -1883,12 +1921,16 @@
                   );
                 });
               }
-            })
+            }),
           ],
           [
             "catch",
             LppFunction.native(({ self, args }) => {
-              if (self instanceof LppPromise && args.length > 0 && args[0] instanceof LppFunction) {
+              if (
+                self instanceof LppPromise &&
+                args.length > 0 &&
+                args[0] instanceof LppFunction
+              ) {
                 return new LppReturn(self.error(args[0]));
               } else {
                 return async(function* () {
@@ -1897,8 +1939,8 @@
                   );
                 });
               }
-            })
-          ]
+            }),
+          ],
         ])
       )
     );
@@ -1946,19 +1988,17 @@
 
   // src/core/global/error/Error.ts
   function Error_default(global2) {
-    const Error2 = global2.Error = LppFunction.native(({ self, args }) => {
+    const Error2 = (global2.Error = LppFunction.native(({ self, args }) => {
       if (self.instanceof(Error2)) {
         self.set("value", args[0] ?? new LppConstant(null));
         self.set("stack", new LppConstant(null));
         return new LppReturn(new LppArray());
       } else {
         return async(function* () {
-          return raise(
-            yield global2.IllegalInvocationError.construct([])
-          );
+          return raise(yield global2.IllegalInvocationError.construct([]));
         });
       }
-    }, new LppObject(/* @__PURE__ */ new Map()));
+    }, new LppObject(/* @__PURE__ */ new Map())));
   }
 
   // src/core/global/error/IllegalInvocationError.ts
@@ -1966,20 +2006,20 @@
     const base = asValue(global2.Error.get("prototype"));
     if (!(base instanceof LppObject))
       throw new Error("lpp: unexpected prototype -- should be Object");
-    const IllegalInvocationError = global2.IllegalInvocationError = LppFunction.native(({ self, args }) => {
-      if (self.instanceof(IllegalInvocationError)) {
-        return async(function* () {
-          const v = yield global2.Error.apply(self, args);
-          if (v instanceof LppException)
-            return v;
-          return new LppReturn(new LppConstant(null));
-        });
-      } else {
-        return async(function* () {
-          return raise(yield IllegalInvocationError.construct([]));
-        });
-      }
-    }, LppObject.create(base));
+    const IllegalInvocationError = (global2.IllegalInvocationError =
+      LppFunction.native(({ self, args }) => {
+        if (self.instanceof(IllegalInvocationError)) {
+          return async(function* () {
+            const v = yield global2.Error.apply(self, args);
+            if (v instanceof LppException) return v;
+            return new LppReturn(new LppConstant(null));
+          });
+        } else {
+          return async(function* () {
+            return raise(yield IllegalInvocationError.construct([]));
+          });
+        }
+      }, LppObject.create(base)));
   }
 
   // src/core/global/error/SyntaxError.ts
@@ -1987,25 +2027,22 @@
     const base = asValue(global2.Error.get("prototype"));
     if (!(base instanceof LppObject))
       throw new Error("lpp: unexpected prototype -- should be Object");
-    const SyntaxError = global2.SyntaxError = LppFunction.native(
+    const SyntaxError = (global2.SyntaxError = LppFunction.native(
       ({ self, args }) => {
         if (self.instanceof(SyntaxError)) {
           return async(function* () {
             const v = yield global2.Error.apply(self, args);
-            if (v instanceof LppException)
-              return v;
+            if (v instanceof LppException) return v;
             return new LppReturn(new LppConstant(null));
           });
         } else {
           return async(function* () {
-            return raise(
-              yield global2.IllegalInvocationError.construct([])
-            );
+            return raise(yield global2.IllegalInvocationError.construct([]));
           });
         }
       },
       LppObject.create(base)
-    );
+    ));
   }
 
   // src/core/global/error/index.ts
@@ -2019,29 +2056,27 @@
   var ffi_exports = {};
   __export(ffi_exports, {
     fromObject: () => fromObject,
-    toObject: () => toObject
+    toObject: () => toObject,
   });
   function toObject(value) {
     const map = /* @__PURE__ */ new WeakMap();
     function deserializeInternal(value2) {
-      if (value2 instanceof LppConstant)
-        return value2.value;
+      if (value2 instanceof LppConstant) return value2.value;
       if (value2 instanceof LppArray) {
         const cache = map.get(value2);
-        if (cache)
-          return cache;
-        const res = value2.value.map((v) => v ? deserializeInternal(v) : null);
+        if (cache) return cache;
+        const res = value2.value.map((v) =>
+          v ? deserializeInternal(v) : null
+        );
         map.set(value2, res);
         return res;
       }
       if (value2 instanceof LppObject) {
         const cache = map.get(value2);
-        if (cache)
-          return cache;
+        if (cache) return cache;
         const res = {};
         for (const [k, v] of value2.value.entries()) {
-          if (k === "constructor")
-            continue;
+          if (k === "constructor") continue;
           res[k] = deserializeInternal(v);
         }
         map.set(value2, res);
@@ -2054,8 +2089,7 @@
   function fromObject(value) {
     const map = /* @__PURE__ */ new WeakMap();
     function serializeInternal(value2) {
-      if (value2 === null || value2 === void 0)
-        return new LppConstant(null);
+      if (value2 === null || value2 === void 0) return new LppConstant(null);
       switch (typeof value2) {
         case "string":
         case "number":
@@ -2063,10 +2097,11 @@
           return new LppConstant(value2);
         case "object": {
           const v = map.get(value2);
-          if (v)
-            return v;
+          if (v) return v;
           if (value2 instanceof globalThis.Array) {
-            const res = new LppArray(value2.map((value3) => serializeInternal(value3)));
+            const res = new LppArray(
+              value2.map((value3) => serializeInternal(value3))
+            );
             map.set(value2, res);
             return res;
           }
@@ -2090,11 +2125,15 @@
         [
           "parse",
           LppFunction.native(({ args }) => {
-            if (args.length < 1 || !(args[0] instanceof LppConstant) || !(typeof args[0].value === "string")) {
+            if (
+              args.length < 1 ||
+              !(args[0] instanceof LppConstant) ||
+              !(typeof args[0].value === "string")
+            ) {
               return async(function* () {
                 return raise(
                   yield global2.SyntaxError.construct([
-                    new LppConstant("Invalid JSON")
+                    new LppConstant("Invalid JSON"),
                   ])
                 );
               });
@@ -2108,14 +2147,14 @@
                 if (e instanceof globalThis.Error) {
                   return raise(
                     yield global2.SyntaxError.construct([
-                      new LppConstant(e.message)
+                      new LppConstant(e.message),
                     ])
                   );
                 }
                 throw e;
               });
             }
-          })
+          }),
         ],
         [
           "stringify",
@@ -2124,7 +2163,7 @@
               return async(function* () {
                 return raise(
                   yield global2.SyntaxError.construct([
-                    new LppConstant("Invalid value")
+                    new LppConstant("Invalid value"),
                   ])
                 );
               });
@@ -2138,15 +2177,15 @@
                 if (e instanceof globalThis.Error) {
                   return raise(
                     yield global2.SyntaxError.construct([
-                      new LppConstant(e.message)
+                      new LppConstant(e.message),
                     ])
                   );
                 }
                 throw e;
               });
             }
-          })
-        ]
+          }),
+        ],
       ])
     );
   }
@@ -2160,152 +2199,208 @@
         [
           "sin",
           LppFunction.native(({ args }) => {
-            if (args.length < 1 || !(args[0] instanceof LppConstant) || !(typeof args[0].value === "number")) {
+            if (
+              args.length < 1 ||
+              !(args[0] instanceof LppConstant) ||
+              !(typeof args[0].value === "number")
+            ) {
               return new LppReturn(new LppConstant(NaN));
             }
             return new LppReturn(
               new LppConstant(globalThis.Math.sin(args[0].value))
             );
-          })
+          }),
         ],
         [
           "sinh",
           LppFunction.native(({ args }) => {
-            if (args.length < 1 || !(args[0] instanceof LppConstant) || !(typeof args[0].value === "number")) {
+            if (
+              args.length < 1 ||
+              !(args[0] instanceof LppConstant) ||
+              !(typeof args[0].value === "number")
+            ) {
               return new LppReturn(new LppConstant(NaN));
             }
             return new LppReturn(
               new LppConstant(globalThis.Math.sinh(args[0].value))
             );
-          })
+          }),
         ],
         [
           "asin",
           LppFunction.native(({ args }) => {
-            if (args.length < 1 || !(args[0] instanceof LppConstant) || !(typeof args[0].value === "number")) {
+            if (
+              args.length < 1 ||
+              !(args[0] instanceof LppConstant) ||
+              !(typeof args[0].value === "number")
+            ) {
               return new LppReturn(new LppConstant(NaN));
             }
             return new LppReturn(
               new LppConstant(globalThis.Math.asin(args[0].value))
             );
-          })
+          }),
         ],
         [
           "asinh",
           LppFunction.native(({ args }) => {
-            if (args.length < 1 || !(args[0] instanceof LppConstant) || !(typeof args[0].value === "number")) {
+            if (
+              args.length < 1 ||
+              !(args[0] instanceof LppConstant) ||
+              !(typeof args[0].value === "number")
+            ) {
               return new LppReturn(new LppConstant(NaN));
             }
             return new LppReturn(
               new LppConstant(globalThis.Math.asinh(args[0].value))
             );
-          })
+          }),
         ],
         [
           "cos",
           LppFunction.native(({ args }) => {
-            if (args.length < 1 || !(args[0] instanceof LppConstant) || !(typeof args[0].value === "number")) {
+            if (
+              args.length < 1 ||
+              !(args[0] instanceof LppConstant) ||
+              !(typeof args[0].value === "number")
+            ) {
               return new LppReturn(new LppConstant(NaN));
             }
             return new LppReturn(
               new LppConstant(globalThis.Math.cos(args[0].value))
             );
-          })
+          }),
         ],
         [
           "cosh",
           LppFunction.native(({ args }) => {
-            if (args.length < 1 || !(args[0] instanceof LppConstant) || !(typeof args[0].value === "number")) {
+            if (
+              args.length < 1 ||
+              !(args[0] instanceof LppConstant) ||
+              !(typeof args[0].value === "number")
+            ) {
               return new LppReturn(new LppConstant(NaN));
             }
             return new LppReturn(
               new LppConstant(globalThis.Math.cosh(args[0].value))
             );
-          })
+          }),
         ],
         [
           "acos",
           LppFunction.native(({ args }) => {
-            if (args.length < 1 || !(args[0] instanceof LppConstant) || !(typeof args[0].value === "number")) {
+            if (
+              args.length < 1 ||
+              !(args[0] instanceof LppConstant) ||
+              !(typeof args[0].value === "number")
+            ) {
               return new LppReturn(new LppConstant(NaN));
             }
             return new LppReturn(
               new LppConstant(globalThis.Math.acos(args[0].value))
             );
-          })
+          }),
         ],
         [
           "acosh",
           LppFunction.native(({ args }) => {
-            if (args.length < 1 || !(args[0] instanceof LppConstant) || !(typeof args[0].value === "number")) {
+            if (
+              args.length < 1 ||
+              !(args[0] instanceof LppConstant) ||
+              !(typeof args[0].value === "number")
+            ) {
               return new LppReturn(new LppConstant(NaN));
             }
             return new LppReturn(
               new LppConstant(globalThis.Math.acosh(args[0].value))
             );
-          })
+          }),
         ],
         [
           "tan",
           LppFunction.native(({ args }) => {
-            if (args.length < 1 || !(args[0] instanceof LppConstant) || !(typeof args[0].value === "number")) {
+            if (
+              args.length < 1 ||
+              !(args[0] instanceof LppConstant) ||
+              !(typeof args[0].value === "number")
+            ) {
               return new LppReturn(new LppConstant(NaN));
             }
             return new LppReturn(
               new LppConstant(globalThis.Math.tan(args[0].value))
             );
-          })
+          }),
         ],
         [
           "tanh",
           LppFunction.native(({ args }) => {
-            if (args.length < 1 || !(args[0] instanceof LppConstant) || !(typeof args[0].value === "number")) {
+            if (
+              args.length < 1 ||
+              !(args[0] instanceof LppConstant) ||
+              !(typeof args[0].value === "number")
+            ) {
               return new LppReturn(new LppConstant(NaN));
             }
             return new LppReturn(
               new LppConstant(globalThis.Math.tanh(args[0].value))
             );
-          })
+          }),
         ],
         [
           "atan",
           LppFunction.native(({ args }) => {
-            if (args.length < 1 || !(args[0] instanceof LppConstant) || !(typeof args[0].value === "number")) {
+            if (
+              args.length < 1 ||
+              !(args[0] instanceof LppConstant) ||
+              !(typeof args[0].value === "number")
+            ) {
               return new LppReturn(new LppConstant(NaN));
             }
             return new LppReturn(
               new LppConstant(globalThis.Math.atan(args[0].value))
             );
-          })
+          }),
         ],
         [
           "atanh",
           LppFunction.native(({ args }) => {
-            if (args.length < 1 || !(args[0] instanceof LppConstant) || !(typeof args[0].value === "number")) {
+            if (
+              args.length < 1 ||
+              !(args[0] instanceof LppConstant) ||
+              !(typeof args[0].value === "number")
+            ) {
               return new LppReturn(new LppConstant(NaN));
             }
             return new LppReturn(
               new LppConstant(globalThis.Math.atanh(args[0].value))
             );
-          })
+          }),
         ],
         [
           "atan2",
           LppFunction.native(({ args }) => {
-            if (args.length < 2 || !(args[0] instanceof LppConstant) || !(typeof args[0].value === "number") || !(args[1] instanceof LppConstant) || !(typeof args[0].value === "number")) {
+            if (
+              args.length < 2 ||
+              !(args[0] instanceof LppConstant) ||
+              !(typeof args[0].value === "number") ||
+              !(args[1] instanceof LppConstant) ||
+              !(typeof args[0].value === "number")
+            ) {
               return new LppReturn(new LppConstant(NaN));
             }
             return new LppReturn(
-              new LppConstant(globalThis.Math.atan2(args[0].value, args[1].value))
+              new LppConstant(
+                globalThis.Math.atan2(args[0].value, args[1].value)
+              )
             );
-          })
+          }),
         ],
         [
           "random",
           LppFunction.native(() => {
             return new LppReturn(new LppConstant(globalThis.Math.random()));
-          })
-        ]
+          }),
+        ],
       ])
     );
   }
@@ -2326,11 +2421,12 @@
   var developers = [
     "\u{1F43A} @FurryR https://github.com/FurryR - Developer, Test, Translation, Documentation",
     "\u{1F914} @SimonShiki https://github.com/SimonShiki - Test, Technical support",
+    "\u{1F988} @SharkPool https://github.com/SharkPool-SP - Cover Artist, Technical Support",
+    "\u2B50 @DilemmaGX https://github.com/DilemmaGX - Test",
     "\u{1F604} @Nights https://github.com/Nightre - Technical support",
     "\u{1F524} @CST1229 https://github.com/CST1229 - Technical support",
-    "\u2B50 @DilemmaGX https://github.com/DilemmaGX - Icon artist (legacy)",
-    "\u{1F36D} @TangDo158 https://github.com/TangDo158 - Icon artist (new)",
-    "\u{1F43A} @VeroFess https://github.com/VeroFess - Technical support"
+    "\u{1F95A} @Ashimee https://github.com/Ashimee - Test, Technical support",
+    "\u{1F43A} @VeroFess https://github.com/VeroFess - Technical support",
   ];
 
   // src/impl/traceback/dialog.ts
@@ -2343,31 +2439,28 @@
     Text: () => Text,
     Title: () => Title,
     globalStyle: () => globalStyle,
-    show: () => show
+    show: () => show,
   });
   function show(Blockly, id, value, textAlign) {
     const workspace = Blockly.getMainWorkspace();
     const block = workspace.getBlockById(id);
-    if (!block)
-      return;
+    if (!block) return;
     Blockly.DropDownDiv.hideWithoutAnimation();
     Blockly.DropDownDiv.clearContent();
-    const contentDiv = Blockly.DropDownDiv.getContentDiv(), elem = document.createElement("div");
+    const contentDiv = Blockly.DropDownDiv.getContentDiv(),
+      elem = document.createElement("div");
     elem.setAttribute("class", "valueReportBox");
     elem.append(...value);
     elem.style.maxWidth = "none";
     elem.style.maxHeight = "none";
     elem.style.textAlign = textAlign;
     elem.style.userSelect = "none";
-    contentDiv.appendChild(elem);
+    contentDiv.append(elem);
     Blockly.DropDownDiv.setColour(
       Blockly.Colours.valueReportBackground,
       Blockly.Colours.valueReportBorder
     );
-    Blockly.DropDownDiv.showPositionedByBlock(
-      workspace,
-      block
-    );
+    Blockly.DropDownDiv.showPositionedByBlock(workspace, block);
     return elem;
   }
   function IconGroup(icons) {
@@ -2417,15 +2510,13 @@
   }
   function Text(value, className) {
     const text = document.createElement("span");
-    if (className)
-      text.className = className;
+    if (className) text.className = className;
     text.textContent = value;
     return text;
   }
   function Div(value, className) {
     const div = document.createElement("div");
-    if (className)
-      div.className = className;
+    if (className) div.className = className;
     div.append(...value);
     return div;
   }
@@ -2443,7 +2534,7 @@
   text-shadow: 0 0 0 gray, 0px 0px 5px silver;
 }
 `;
-    document.head.appendChild(globalStyle);
+    document.head.append(globalStyle);
   }
 
   // src/impl/context.ts
@@ -2476,14 +2567,15 @@
   __export(metadata_exports, {
     TypeMetadata: () => TypeMetadata,
     attach: () => attach,
-    hasMetadata: () => hasMetadata
+    hasMetadata: () => hasMetadata,
   });
   var TypeMetadata = class {
     /**
      * Construct a type metadata object.
      * @param signature Function's signature.
      */
-    constructor(signature) {
+    constructor(type, signature) {
+      this.type = type;
       this.signature = signature;
     }
   };
@@ -2501,14 +2593,15 @@
   var ScratchMetadata = class extends TypeMetadata {
     /**
      * Construct a Scratch metadata object.
+     * @param type Function type.
      * @param signature Function's signature.
      * @param blocks Runtime blocks instance (for serialize/deserialize) and Block ID (refers to lpp_constructFunction).
      * @param sprite Original sprite ID of block container.
      * @param target Target ID.
      * @param closure Function's closure.
      */
-    constructor(signature, blocks, sprite, target, closure) {
-      super(signature);
+    constructor(type, signature, blocks, sprite, target, closure) {
+      super(type, signature);
       this.blocks = blocks;
       this.sprite = sprite;
       this.target = target;
@@ -2541,72 +2634,84 @@
   var Validator;
   ((Validator2) => {
     function isField(value) {
-      if (!(typeof value === "object" && value !== null))
-        return false;
+      if (!(typeof value === "object" && value !== null)) return false;
       const v = value;
-      if (v.id !== null && typeof v.id !== "string")
-        return false;
-      if (typeof v.name !== "string")
-        return false;
-      if (typeof v.value !== "string")
-        return false;
+      if (v.id !== null && typeof v.id !== "string") return false;
+      if (typeof v.name !== "string") return false;
+      if (typeof v.value !== "string") return false;
       return true;
     }
     Validator2.isField = isField;
     function isInput(container, value) {
-      if (!(typeof value === "object" && value !== null))
-        return false;
+      if (!(typeof value === "object" && value !== null)) return false;
       const v = value;
-      if (v.shadow !== null && typeof v.shadow !== "string")
-        return false;
-      if (typeof v.name !== "string")
-        return false;
-      if (typeof v.block !== "string" || !(v.block in container))
-        return false;
+      if (v.shadow !== null && typeof v.shadow !== "string") return false;
+      if (typeof v.name !== "string") return false;
+      if (typeof v.block !== "string" || !(v.block in container)) return false;
       return true;
     }
     Validator2.isInput = isInput;
     function isBlock(container, id, value) {
-      if (!(typeof value === "object" && value !== null))
-        return false;
+      if (!(typeof value === "object" && value !== null)) return false;
       const v = value;
-      if (v.id !== id)
-        return false;
-      if (typeof v.opcode !== "string")
-        return false;
+      if (v.id !== id) return false;
+      if (typeof v.opcode !== "string") return false;
       if (v.parent !== null) {
-        if (typeof v.parent !== "string" || !(v.parent in container) || v.parent === id)
+        if (
+          typeof v.parent !== "string" ||
+          !(v.parent in container) ||
+          v.parent === id
+        )
           return false;
       }
       if (v.next !== null) {
-        if (typeof v.next !== "string" || !(v.next in container) || v.next === id)
+        if (
+          typeof v.next !== "string" ||
+          !(v.next in container) ||
+          v.next === id
+        )
           return false;
       }
-      if (typeof v.shadow !== "boolean")
+      if (typeof v.shadow !== "boolean") return false;
+      if (typeof v.topLevel !== "boolean") return false;
+      if (
+        !(typeof v.inputs === "object" && v.inputs !== null) ||
+        (!Object.values(v.inputs).every((elem) => isInput(container, elem)) &&
+          Object.keys(v.inputs).length !== 0)
+      )
         return false;
-      if (typeof v.topLevel !== "boolean")
+      if (
+        !(typeof v.fields === "object" && v.fields !== null) ||
+        (!Object.values(v.fields).every((v2) => isField(v2)) &&
+          Object.keys(v.fields).length !== 0)
+      )
         return false;
-      if (!(typeof v.inputs === "object" && v.inputs !== null) || !Object.values(v.inputs).every((elem) => isInput(container, elem)) && Object.keys(v.inputs).length !== 0)
-        return false;
-      if (!(typeof v.fields === "object" && v.fields !== null) || !Object.values(v.fields).every((v2) => isField(v2)) && Object.keys(v.fields).length !== 0)
-        return false;
-      if (v.mutation !== void 0 && !(typeof v.mutation === "object" && v.mutation !== null))
+      if (
+        v.mutation !== void 0 &&
+        !(typeof v.mutation === "object" && v.mutation !== null)
+      )
         return false;
       return true;
     }
     Validator2.isBlock = isBlock;
     function isInfo(value) {
-      if (!(typeof value === "object" && value !== null))
-        return false;
+      if (!(typeof value === "object" && value !== null)) return false;
       const v = value;
-      if (!(v.signature instanceof Array) || !v.signature.every((v2) => typeof v2 === "string") && v.signature.length !== 0)
+      if (
+        !(v.signature instanceof Array) ||
+        (!v.signature.every((v2) => typeof v2 === "string") &&
+          v.signature.length !== 0)
+      )
         return false;
-      if (!(typeof v.script === "object" && v.script !== null) || !Object.entries(v.script).every(
-        (elem) => isBlock(v.script, elem[0], elem[1])
-      ) && Object.keys(v.script).length !== 0)
+      if (
+        !(typeof v.script === "object" && v.script !== null) ||
+        (!Object.entries(v.script).every((elem) =>
+          isBlock(v.script, elem[0], elem[1])
+        ) &&
+          Object.keys(v.script).length !== 0)
+      )
         return false;
-      if (typeof v.block !== "string" || !(v.block in v.script))
-        return false;
+      if (typeof v.block !== "string" || !(v.block in v.script)) return false;
       return true;
     }
     Validator2.isInfo = isInfo;
@@ -2652,26 +2757,35 @@
       function keyValue(index, value3, isArray) {
         const subelem = document.createElement("li");
         subelem.append(
-          isArray ? dialog_exports.Text(
-            index,
-            "lpp-code lpp-inspector-number lpp-inspector-key"
-          ) : /^[$_a-zA-Z][$_0-9a-zA-Z]*$/.test(index) ? dialog_exports.Text(
-            index,
-            `lpp-code lpp-inspector-key${["constructor", "prototype"].includes(String(index)) ? `-${index}` : ""}`
-          ) : dialog_exports.Text(
-            JSON.stringify(index),
-            "lpp-code lpp-inspector-string lpp-inspector-key"
-          ),
-          dialog_exports.Text(` \u27A1\uFE0F `)
+          isArray
+            ? dialog_exports.Text(
+                index,
+                "lpp-code lpp-inspector-number lpp-inspector-key"
+              )
+            : /^[$_a-zA-Z][$_0-9a-zA-Z]*$/.test(index)
+              ? dialog_exports.Text(
+                  index,
+                  `lpp-code lpp-inspector-key${["constructor", "prototype"].includes(String(index)) ? `-${index}` : ""}`
+                )
+              : dialog_exports.Text(
+                  JSON.stringify(index),
+                  "lpp-code lpp-inspector-string lpp-inspector-key"
+                ),
+          dialog_exports.Text(" \u27A1\uFE0F ")
         );
         subelem.append(Inspector(Blockly, vm, translate, value3));
         return subelem;
       }
-      const metadata = (value2 instanceof LppObject || value2 instanceof LppFunction) && hasMetadata(value2);
+      const metadata =
+        (value2 instanceof LppObject || value2 instanceof LppFunction) &&
+        hasMetadata(value2);
       const div = document.createElement("ul");
       div.classList.add("lpp-list");
       for (const [index, v] of value2.value.entries()) {
-        if ((!(value2 instanceof LppFunction) || index !== "prototype") && index !== "constructor")
+        if (
+          (!(value2 instanceof LppFunction) || index !== "prototype") &&
+          index !== "constructor"
+        )
           div.append(
             keyValue(
               String(index),
@@ -2688,11 +2802,20 @@
             false
           )
         );
-      if (value2 instanceof LppArray || value2 instanceof LppFunction || value2 instanceof LppObject) {
+      if (
+        value2 instanceof LppArray ||
+        value2 instanceof LppFunction ||
+        value2 instanceof LppObject
+      ) {
         div.append(
           keyValue(
             "constructor",
-            value2 instanceof LppArray ? Global.Array : value2.value.get("constructor") ?? (value2 instanceof LppFunction ? Global.Function : Global.Object),
+            value2 instanceof LppArray
+              ? Global.Array
+              : value2.value.get("constructor") ??
+                  (value2 instanceof LppFunction
+                    ? Global.Function
+                    : Global.Object),
             false
           )
         );
@@ -2704,11 +2827,15 @@
             "[[FunctionLocation]]",
             "lpp-code lpp-inspector-key-constructor"
           ),
-          dialog_exports.Text(` \u27A1\uFE0E `)
+          dialog_exports.Text(" \u27A1\uFE0E ")
         );
         const traceback = document.createElement("span");
         traceback.classList.add("lpp-code");
-        if (Blockly && value2.metadata.sprite && vm.runtime.getTargetById(value2.metadata.sprite)) {
+        if (
+          Blockly &&
+          value2.metadata.sprite &&
+          vm.runtime.getTargetById(value2.metadata.sprite)
+        ) {
           const workspace = Blockly.getMainWorkspace();
           traceback.classList.add("lpp-traceback-stack-enabled");
           const { sprite, blocks } = value2.metadata;
@@ -2716,12 +2843,13 @@
           traceback.title = translate({
             id: "lpp.tooltip.button.scrollToBlockEnabled",
             default: "Scroll to this block.",
-            description: "Scroll button text."
+            description: "Scroll button text.",
           });
           traceback.addEventListener("click", () => {
-            const box = Blockly.DropDownDiv.getContentDiv().getElementsByClassName(
-              "valueReportBox"
-            )[0];
+            const box =
+              Blockly.DropDownDiv.getContentDiv().getElementsByClassName(
+                "valueReportBox"
+              )[0];
             vm.setEditingTarget(sprite);
             workspace.centerOnBlock(blocks[1], true);
             if (box) {
@@ -2749,83 +2877,119 @@
       switch (typeof value.value) {
         case "boolean":
         case "number":
-          return dialog_exports.Text(String(value.value), "lpp-code lpp-inspector-number");
+          return dialog_exports.Text(
+            String(value.value),
+            "lpp-code lpp-inspector-number"
+          );
         case "string":
           return dialog_exports.Text(
             JSON.stringify(value.value),
             "lpp-code lpp-inspector-string"
           );
       }
-    } else if (value instanceof LppArray || value instanceof LppObject || value instanceof LppFunction || value instanceof LppBoundArg) {
+    } else if (
+      value instanceof LppArray ||
+      value instanceof LppObject ||
+      value instanceof LppFunction ||
+      value instanceof LppBoundArg
+    ) {
+      const generateSummary = (value2) => {
+        let code2;
+        if (value2 instanceof LppArray) {
+          code2 = dialog_exports.Text(
+            value2.value.length === 0 ? "[]" : "[...]",
+            "lpp-code"
+          );
+        } else if (value2 instanceof LppFunction) {
+          const metadata = hasMetadata(value2);
+          code2 = dialog_exports.Text(
+            `${metadata && value2.metadata instanceof TypeMetadata && (value2.metadata.type === "asyncFunction" || value2.metadata.type === "asyncGeneratorFunction") ? "async " : ""}f${metadata && value2.metadata instanceof TypeMetadata && (value2.metadata.type === "generatorFunction" || value2.metadata.type === "asyncGeneratorFunction") ? "*" : ""} (${metadata && value2.metadata instanceof TypeMetadata ? value2.metadata.signature.join(", ") : ""})`,
+            "lpp-code"
+          );
+          code2.style.fontStyle = "italic";
+        } else if (value2 instanceof LppObject) {
+          code2 = dialog_exports.Text(
+            value2.value.size === 0 ? "{}" : "{...}",
+            "lpp-code"
+          );
+        } else {
+          code2 = dialog_exports.Text(
+            value2.value.length === 0 ? "()" : "(...)",
+            "lpp-code"
+          );
+        }
+        if (
+          Blockly &&
+          (value2 instanceof LppFunction || value2 instanceof LppObject) &&
+          hasMetadata(value2) &&
+          value2.metadata instanceof ScratchMetadata &&
+          value2.metadata.sprite &&
+          vm.runtime.getTargetById(value2.metadata.sprite)
+        ) {
+          const workspace = Blockly.getMainWorkspace();
+          const { sprite, blocks } = value2.metadata;
+          code2.title = translate({
+            id: "lpp.tooltip.button.scrollToBlockEnabled",
+            default: "Scroll to this block.",
+            description: "Scroll button text.",
+          });
+          code2.classList.add("lpp-traceback-stack-enabled");
+          code2.addEventListener("click", () => {
+            const box =
+              Blockly.DropDownDiv.getContentDiv().getElementsByClassName(
+                "valueReportBox"
+              )[0];
+            vm.setEditingTarget(sprite);
+            workspace.centerOnBlock(blocks[1], true);
+            if (box) {
+              Blockly.DropDownDiv.hideWithoutAnimation();
+              Blockly.DropDownDiv.clearContent();
+              Blockly.DropDownDiv.getContentDiv().append(box);
+              Blockly.DropDownDiv.showPositionedByBlock(
+                workspace,
+                workspace.getBlockById(blocks[1])
+              );
+            }
+          });
+        } else {
+          code2.addEventListener("click", () => {
+            btn.click();
+          });
+        }
+        return code2;
+      };
       let v;
       const btn = ExtendIcon(
         translate({
           id: "lpp.tooltip.button.help.more",
           default: "Show detail.",
-          description: "Show detail button."
+          description: "Show detail button.",
         }),
         translate({
           id: "lpp.tooltip.button.help.less",
           default: "Hide detail.",
-          description: "Hide detail button."
+          description: "Hide detail button.",
         }),
         () => {
-          if (!v)
-            span.appendChild(v = objView(value));
-          else
-            v.style.display = "block";
+          if (code) {
+            code.remove();
+            code = generateSummary(value);
+            span.append(code);
+          }
+          span.append((v = objView(value)));
         },
         () => {
-          if (v)
-            v.style.display = "none";
+          v?.remove();
+          if (code) {
+            code.remove();
+            code = generateSummary(value);
+            span.append(code);
+          }
         }
       );
+      let code = generateSummary(value);
       const span = document.createElement("span");
       span.style.lineHeight = "80%";
-      let code;
-      if (value instanceof LppArray) {
-        code = dialog_exports.Text(value.value.length === 0 ? "[]" : "[...]", "lpp-code");
-      } else if (value instanceof LppFunction) {
-        code = dialog_exports.Text(
-          `f (${hasMetadata(value) && value.metadata instanceof TypeMetadata ? value.metadata.signature.join(", ") : ""})`,
-          "lpp-code"
-        );
-        code.style.fontStyle = "italic";
-      } else if (value instanceof LppObject) {
-        code = dialog_exports.Text(value.value.size === 0 ? "{}" : "{...}", "lpp-code");
-      } else {
-        code = dialog_exports.Text(value.value.length === 0 ? "()" : "(...)", "lpp-code");
-      }
-      if (Blockly && (value instanceof LppFunction || value instanceof LppObject) && hasMetadata(value) && value.metadata instanceof ScratchMetadata && value.metadata.sprite && vm.runtime.getTargetById(value.metadata.sprite)) {
-        const workspace = Blockly.getMainWorkspace();
-        const { sprite, blocks } = value.metadata;
-        code.title = translate({
-          id: "lpp.tooltip.button.scrollToBlockEnabled",
-          default: "Scroll to this block.",
-          description: "Scroll button text."
-        });
-        code.classList.add("lpp-traceback-stack-enabled");
-        code.addEventListener("click", () => {
-          const box = Blockly.DropDownDiv.getContentDiv().getElementsByClassName(
-            "valueReportBox"
-          )[0];
-          vm.setEditingTarget(sprite);
-          workspace.centerOnBlock(blocks[1], true);
-          if (box) {
-            Blockly.DropDownDiv.hideWithoutAnimation();
-            Blockly.DropDownDiv.clearContent();
-            Blockly.DropDownDiv.getContentDiv().append(box);
-            Blockly.DropDownDiv.showPositionedByBlock(
-              workspace,
-              workspace.getBlockById(blocks[1])
-            );
-          }
-        });
-      } else {
-        code.addEventListener("click", () => {
-          btn.click();
-        });
-      }
       span.append(btn, dialog_exports.Text(" "), code);
       return span;
     }
@@ -2863,12 +3027,7 @@
 
   // src/impl/traceback/index.ts
   var lastNotification;
-  function notificationAlert({
-    title,
-    body,
-    tag,
-    silent
-  }) {
+  function notificationAlert({ title, body, tag, silent }) {
     Notification.requestPermission().then((value) => {
       if (value === "granted") {
         if (lastNotification) {
@@ -2879,7 +3038,7 @@
           lastNotification = new Notification(title, {
             body,
             tag,
-            silent
+            silent,
           });
           lastNotification.addEventListener("close", () => {
             lastNotification = void 0;
@@ -2894,17 +3053,23 @@
     if (!container) {
       container = document.createElement("div");
       container.id = "tmpSVGContainer";
-      container.innerHTML = '<svg id="tmpSVG" xmlns="http://www.w3.org/2000/svg" xmlns:html="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="blocklySvg"><style type="text/css" ><![CDATA[.blocklyDraggable{font-family: "Helvetica Neue", Helvetica, sans-serif;font-size: 12pt;font-weight: 500;}.blocklyText {fill: #fff;box-sizing: border-box;}.blocklyEditableText .blocklyText{fill: #000;}.blocklyDropdownText.blocklyText{fill: #fff;}]]></style><g id="tmpSVGContent"></g></svg>';
-      document.body.appendChild(container);
+      container.innerHTML =
+        '<svg id="tmpSVG" xmlns="http://www.w3.org/2000/svg" xmlns:html="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="blocklySvg"><style type="text/css" ><![CDATA[.blocklyDraggable{font-family: "Helvetica Neue", Helvetica, sans-serif;font-size: 12pt;font-weight: 500;}.blocklyText {fill: #fff;box-sizing: border-box;}.blocklyEditableText .blocklyText{fill: #000;}.blocklyDropdownText.blocklyText{fill: #fff;}]]></style><g id="tmpSVGContent"></g></svg>';
+      document.body.append(container);
     }
     const content = document.getElementById("tmpSVGContent");
     if (content && content instanceof SVGGElement) {
       content.innerHTML = temp;
       content.children[0].setAttribute("transform", "");
-      const shape = content.children[0].getAttribute("data-shapes") ?? "", shape_hat = shape.includes("hat"), ishat = "hat" !== shape && shape_hat, bbox = content.getBBox();
+      const shape = content.children[0].getAttribute("data-shapes") ?? "",
+        shape_hat = shape.includes("hat"),
+        ishat = "hat" !== shape && shape_hat,
+        bbox = content.getBBox();
       let length = shape_hat ? 18 : 0;
       length = ishat ? 21 : length;
-      const width = Math.max(750, bbox.width + 1), height = bbox.height + length, svg = document.getElementById("tmpSVG");
+      const width = Math.max(750, bbox.width + 1),
+        height = bbox.height + length,
+        svg = document.getElementById("tmpSVG");
       if (svg) {
         svg.setAttribute("width", width.toString());
         svg.setAttribute("height", height.toString());
@@ -2942,7 +3107,10 @@
   }
   function warnError(Blockly, vm, translate, error, id, target) {
     if (Blockly) {
-      if (vm.runtime.getEditingTarget()?.id !== target && vm.runtime.getTargetById(target)) {
+      if (
+        vm.runtime.getEditingTarget()?.id !== target &&
+        vm.runtime.getTargetById(target)
+      ) {
         vm.setEditingTarget(target);
       }
       const workspace = Blockly.getMainWorkspace();
@@ -2957,12 +3125,12 @@
               translate({
                 id: "lpp.tooltip.button.help.more",
                 default: "Show detail.",
-                description: "Show detail button."
+                description: "Show detail button.",
               }),
               translate({
                 id: "lpp.tooltip.button.help.less",
                 default: "Hide detail.",
-                description: "Hide detail button."
+                description: "Hide detail button.",
               }),
               () => {
                 if (div) {
@@ -2972,7 +3140,7 @@
                     v.textContent = `\u{1F4A1} ${translate({
                       id: `lpp.error.${error}.detail`,
                       default: `Text [lpp.error.${error}.detail]`,
-                      description: "Error detail message."
+                      description: "Error detail message.",
                     })}`;
                   }
                 }
@@ -2991,22 +3159,22 @@
               translate({
                 id: "lpp.tooltip.button.close",
                 default: "Close this hint.",
-                description: "Close button."
+                description: "Close button.",
               })
-            )
+            ),
           ]),
           Title(
             `\u2139\uFE0F ${translate({
               id: `lpp.error.${error}.summary`,
               default: `Text [lpp.error.${error}.summary]`,
-              description: "Error summary message."
+              description: "Error summary message.",
             })}`
           ),
           document.createElement("br"),
           Text(
             `\u{1F50D} ${translate({ id: "lpp.error.hint", default: "For further information please check DevTools Console.", description: "Open DevTools hint." })}`,
             "lpp-hint"
-          )
+          ),
         ],
         "left"
       );
@@ -3015,16 +3183,16 @@
           title: `\u274C ${translate({
             id: `lpp.error.${error}.summary`,
             default: `Text [lpp.error.${error}.summary]`,
-            description: "Error summary message."
+            description: "Error summary message.",
           })}`,
           body: `\u{1F4CC} ${translate({
             id: "lpp.error.position",
             default: "Position:",
-            description: "Position indicator."
+            description: "Position indicator.",
           })} ${id}
 \u{1F50D} ${translate({ id: "lpp.error.hint", default: "For further information please check DevTools Console.", description: "Open DevTools hint." })}`,
           tag: "lppError",
-          silent: false
+          silent: false,
         });
       }
     } else {
@@ -3032,19 +3200,20 @@
         title: `\u274C ${translate({ id: "lpp.error.releaseMode.summary", default: "The code encountered an error while running.", description: "Release mode error message." })}`,
         body: `\u2139\uFE0F ${translate({
           id: "lpp.error.releaseMode.detail",
-          default: "The program may not work as intended. Please contact project maintainers with this message for help.",
-          description: "Release mode error hint."
+          default:
+            "The program may not work as intended. Please contact project maintainers with this message for help.",
+          description: "Release mode error hint.",
         })}
 \u{1F50D} ${translate({ id: "lpp.error.hint", default: "For further information please check DevTools Console.", description: "Open DevTools hint." })}`,
         tag: "lppError",
-        silent: true
+        silent: true,
       });
     }
     console.groupCollapsed(
       `\u274C ${translate({
         id: `lpp.error.${error}.summary`,
         default: `Text [lpp.error.${error}.summary]`,
-        description: "Error summary message."
+        description: "Error summary message.",
       })}`
     );
     if (Blockly) {
@@ -3052,7 +3221,7 @@
         `\u{1F4A1} ${translate({
           id: `lpp.error.${error}.detail`,
           default: `Text [lpp.error.${error}.detail]`,
-          description: "Error detail message."
+          description: "Error detail message.",
         })}`
       );
       const block = Blockly.getMainWorkspace()?.getBlockById(id);
@@ -3061,7 +3230,7 @@
         `\u{1F4CC} ${translate({
           id: "lpp.error.position",
           default: "Position:",
-          description: "Position indicator."
+          description: "Position indicator.",
         })} ${id}`
       );
       if (svgRoot) {
@@ -3077,15 +3246,16 @@
       console.log(
         `\u2139\uFE0F ${translate({
           id: "lpp.error.releaseMode.detail",
-          default: "The program may not work as intended. Please contact project maintainers with this message for help.",
-          description: "Release mode error hint."
+          default:
+            "The program may not work as intended. Please contact project maintainers with this message for help.",
+          description: "Release mode error hint.",
         })}`
       );
       console.log(
         `\u{1F4CC} ${translate({
           id: "lpp.error.position",
           default: "Position:",
-          description: "Position indicator."
+          description: "Position indicator.",
         })} ${id}`
       );
     }
@@ -3098,8 +3268,9 @@
         text.push(
           `\u{1F4A1} ${translate({
             id: "lpp.error.uncaughtException.detail",
-            default: "Please use try-catch block to catch exceptions or the code will stop execution.",
-            description: "Uncaught exception summary."
+            default:
+              "Please use try-catch block to catch exceptions or the code will stop execution.",
+            description: "Uncaught exception summary.",
           })}`,
           document.createElement("br"),
           document.createElement("br")
@@ -3127,12 +3298,13 @@
               traceback.title = translate({
                 id: "lpp.tooltip.button.scrollToBlockEnabled",
                 default: "Scroll to this block.",
-                description: "Scroll button text."
+                description: "Scroll button text.",
               });
               traceback.addEventListener("click", () => {
-                const box = Blockly.DropDownDiv.getContentDiv().getElementsByClassName(
-                  "valueReportBox"
-                )[0];
+                const box =
+                  Blockly.DropDownDiv.getContentDiv().getElementsByClassName(
+                    "valueReportBox"
+                  )[0];
                 vm.setEditingTarget(value.target);
                 workspace.centerOnBlock(value.block, true);
                 Blockly.DropDownDiv.hideWithoutAnimation();
@@ -3148,14 +3320,15 @@
               traceback.title = translate({
                 id: "lpp.tooltip.button.scrollToBlockDisabled",
                 default: "Unable to find this block in project.",
-                description: "Block not found (for serialized fn) hint."
+                description: "Block not found (for serialized fn) hint.",
               });
             }
           } else if (value instanceof LppTraceback2.NativeFn) {
             traceback.title = translate({
               id: "lpp.tooltip.button.nativeFn",
-              default: "This is native function. For further information please check DevTools Console.",
-              description: "Native function hint."
+              default:
+                "This is native function. For further information please check DevTools Console.",
+              description: "Native function hint.",
             });
           }
           traceback.textContent = value.toString();
@@ -3167,7 +3340,10 @@
       };
       let flag = false;
       for (const stack of exception.stack.toReversed()) {
-        if (stack instanceof LppTraceback2.Block && vm.runtime.getTargetById(stack.target)) {
+        if (
+          stack instanceof LppTraceback2.Block &&
+          vm.runtime.getTargetById(stack.target)
+        ) {
           vm.setEditingTarget(stack.target);
           const workspace = Blockly.getMainWorkspace();
           workspace.centerOnBlock(stack.block, true);
@@ -3181,20 +3357,19 @@
                   translate({
                     id: "lpp.tooltip.button.help.more",
                     default: "Show detail.",
-                    description: "Show detail button."
+                    description: "Show detail button.",
                   }),
                   translate({
                     id: "lpp.tooltip.button.help.less",
                     default: "Hide detail.",
-                    description: "Hide detail button."
+                    description: "Hide detail button.",
                   }),
                   () => {
                     if (div) {
                       const v = div.getElementsByClassName("lpp-hint")[0];
                       if (v) {
                         original = v.textContent ?? "";
-                        while (v.firstChild)
-                          v.removeChild(v.firstChild);
+                        while (v.firstChild) v.removeChild(v.firstChild);
                         v.append(...getTraceback());
                       }
                     }
@@ -3213,9 +3388,9 @@
                   translate({
                     id: "lpp.tooltip.button.close",
                     default: "Close this hint.",
-                    description: "Close button."
+                    description: "Close button.",
                   })
-                )
+                ),
               ]),
               Title(
                 `\u2139\uFE0F ${translate({ id: "lpp.error.uncaughtException.summary", default: "Uncaught exception.", description: "Uncaught exception hint." })}`
@@ -3224,7 +3399,7 @@
               Text(
                 `\u{1F50D} ${translate({ id: "lpp.error.hint", default: "For further information please check DevTools Console.", description: "Open DevTools hint." })}`,
                 "lpp-hint"
-              )
+              ),
             ],
             "left"
           );
@@ -3237,24 +3412,26 @@
           title: `\u274C ${translate({ id: "lpp.error.uncaughtException.summary", default: "Uncaught exception.", description: "Uncaught exception hint." })}`,
           body: `\u{1F4A1} ${translate({
             id: "lpp.error.uncaughtException.detail",
-            default: "Please use try-catch block to catch exceptions or the code will stop execution.",
-            description: "Uncaught exception summary."
+            default:
+              "Please use try-catch block to catch exceptions or the code will stop execution.",
+            description: "Uncaught exception summary.",
           })}
 \u{1F50D} ${translate({ id: "lpp.error.hint", default: "For further information please check DevTools Console.", description: "Open DevTools hint." })}`,
           tag: "lppError",
-          silent: false
+          silent: false,
         });
     } else {
       notificationAlert({
         title: `\u274C ${translate({ id: "lpp.error.releaseMode.summary", default: "The code encountered an error while running.", description: "Release mode error message." })}`,
         body: `\u2139\uFE0F ${translate({
           id: "lpp.error.releaseMode.detail",
-          default: "The program may not work as intended. Please contact project maintainers with this message for help.",
-          description: "Release mode error hint."
+          default:
+            "The program may not work as intended. Please contact project maintainers with this message for help.",
+          description: "Release mode error hint.",
         })}
 \u{1F50D} ${translate({ id: "lpp.error.hint", default: "For further information please check DevTools Console.", description: "Open DevTools hint." })}`,
         tag: "lppError",
-        silent: true
+        silent: true,
       });
     }
     console.groupCollapsed(
@@ -3264,16 +3441,18 @@
       console.log(
         `\u{1F4A1} ${translate({
           id: "lpp.error.uncaughtException.detail",
-          default: "Please use try-catch block to catch exceptions or the code will stop execution.",
-          description: "Uncaught exception summary."
+          default:
+            "Please use try-catch block to catch exceptions or the code will stop execution.",
+          description: "Uncaught exception summary.",
         })}`
       );
     else
       console.log(
         `\u2139\uFE0F ${translate({
           id: "lpp.error.releaseMode.detail",
-          default: "The program may not work as intended. Please contact project maintainers with this message for help.",
-          description: "Release mode error hint."
+          default:
+            "The program may not work as intended. Please contact project maintainers with this message for help.",
+          description: "Release mode error hint.",
         })}`
       );
     console.log(
@@ -3286,11 +3465,12 @@
     for (const [idx, value] of exception.stack.entries()) {
       if (Blockly) {
         if (value instanceof LppTraceback2.Block) {
-          const block = Blockly.getMainWorkspace()?.getBlockById(
+          const block = Blockly.getMainWorkspace()?.getBlockById(value.block);
+          const svgRoot = block?.getSvgRoot();
+          console.groupCollapsed(
+            `\u{1F4CC} ${idx + 1} \u27A1\uFE0F`,
             value.block
           );
-          const svgRoot = block?.getSvgRoot();
-          console.groupCollapsed(`\u{1F4CC} ${idx + 1} \u27A1\uFE0F`, value.block);
           if (svgRoot) {
             showTraceback(svgRoot);
             console.log(svgRoot);
@@ -3373,16 +3553,15 @@
       this.id = id;
       this.lazyText = lazyText;
     }
-    inject() {
-    }
+    inject() {}
     export() {
       return [
         {
           func: this.id,
           // Turbowarp extension
           blockType: "button",
-          text: this.lazyText()
-        }
+          text: this.lazyText(),
+        },
       ];
     }
   };
@@ -3411,7 +3590,7 @@
         const map = value.init(Blockly, null);
         const res = {};
         if (typeof map === "function") {
-          res.init = function(...args) {
+          res.init = function (...args) {
             if (!(this instanceof Blockly.Block)) {
               return;
             }
@@ -3421,7 +3600,7 @@
           };
         } else {
           for (const method of Object.keys(map)) {
-            res[method] = function(...args) {
+            res[method] = function (...args) {
               if (!(this instanceof Blockly.Block)) {
                 return;
               }
@@ -3437,9 +3616,8 @@
           get() {
             return res;
           },
-          set() {
-          },
-          configurable: true
+          set() {},
+          configurable: true,
         });
       }
     }
@@ -3461,14 +3639,14 @@
       return [
         {
           blockType: "label",
-          text: this.lazyLabel()
-        }
+          text: this.lazyLabel(),
+        },
       ].concat(
         Array.from(this.block.entries()).map(([opcode, value]) => ({
           blockType: value.type,
           opcode,
           text: "",
-          arguments: {}
+          arguments: {},
         }))
       );
     }
@@ -3516,7 +3694,9 @@
     const prepatch = (Blockly, block) => {
       block.setOutput(true, "String");
       block.setOutputShape(
-        type === "square" ? Blockly.OUTPUT_SHAPE_SQUARE : Blockly.OUTPUT_SHAPE_ROUND
+        type === "square"
+          ? Blockly.OUTPUT_SHAPE_SQUARE
+          : Blockly.OUTPUT_SHAPE_ROUND
       );
     };
     return {
@@ -3536,7 +3716,7 @@
         }
         return map;
       },
-      type: "reporter"
+      type: "reporter",
     };
   }
   function Command(fn, isTerminal = false) {
@@ -3562,7 +3742,7 @@
         }
         return map;
       },
-      type: "command"
+      type: "command",
     };
   }
   var Reporter;
@@ -3583,7 +3763,7 @@
     Any: () => Any,
     Statement: () => Statement,
     String: () => String2,
-    Text: () => Text2
+    Text: () => Text2,
   });
   function addShadow(field, value) {
     const elem = document.createElement("shadow");
@@ -3591,7 +3771,7 @@
     elem.setAttribute("type", "text");
     child.setAttribute("name", "TEXT");
     child.textContent = value;
-    elem.appendChild(child);
+    elem.append(child);
     field.connection.setShadowDom(elem);
     field.connection.respawnShadow_();
     return field;
@@ -3604,20 +3784,27 @@
   function String2(block, name, value) {
     const field = block.appendValueInput(name);
     const workspace = block.workspace;
-    if (block.isInsertionMarker() || workspace.currentGesture_?.isDraggingBlock_ && workspace.currentGesture_?.targetBlock_?.type === block.type)
+    if (
+      block.isInsertionMarker() ||
+      (workspace.currentGesture_?.isDraggingBlock_ &&
+        workspace.currentGesture_?.targetBlock_?.type === block.type)
+    )
       return field;
     return addShadow(field, value);
   }
   function Any(block, name) {
     const field = block.appendValueInput(name);
     const workspace = block.workspace;
-    if (block.isInsertionMarker() || workspace.currentGesture_?.isDraggingBlock_ && workspace.currentGesture_?.targetBlock_?.type === block.type)
+    if (
+      block.isInsertionMarker() ||
+      (workspace.currentGesture_?.isDraggingBlock_ &&
+        workspace.currentGesture_?.targetBlock_?.type === block.type)
+    )
       return field;
     return addNullShadow(field);
   }
   function Text2(block, name, value) {
-    if (typeof value === "string")
-      return Text2(block, name, [value]);
+    if (typeof value === "string") return Text2(block, name, [value]);
     const input = block.appendDummyInput(name);
     value.forEach((value2) => input.appendField(value2));
     return input;
@@ -3636,70 +3823,85 @@
     return function initalizeField2(Blockly) {
       const scratchBlocks = Blockly;
       const v = Blockly.FieldImage;
-      return cache ?? (cache = class FieldImageButton extends v {
-        /**
-         * Construct a FieldImageButton field.
-         * @param src Image source URL.
-         * @param width Image width.
-         * @param height Image height.
-         * @param callback Click callback.
-         * @param opt_alt Alternative text of the image.
-         * @param flip_rtl Whether to filp the image horizontally when in RTL mode.
-         * @param padding Whether the field has padding.
-         */
-        constructor(src, width, height, callback, opt_alt, flip_rtl, padding) {
-          super(src, width, height, opt_alt, flip_rtl);
-          this.callback = callback;
-          this.padding = padding;
-        }
-        /**
-         * Initalize the field.
-         */
-        init() {
-          if (this.fieldGroup_) {
-            return;
+      return (
+        cache ??
+        (cache = class FieldImageButton extends v {
+          /**
+           * Construct a FieldImageButton field.
+           * @param src Image source URL.
+           * @param width Image width.
+           * @param height Image height.
+           * @param callback Click callback.
+           * @param opt_alt Alternative text of the image.
+           * @param flip_rtl Whether to filp the image horizontally when in RTL mode.
+           * @param padding Whether the field has padding.
+           */
+          constructor(
+            src,
+            width,
+            height,
+            callback,
+            opt_alt,
+            flip_rtl,
+            padding
+          ) {
+            super(src, width, height, opt_alt, flip_rtl);
+            this.callback = callback;
+            this.padding = padding;
           }
-          super.init();
-          this.mouseDownWrapper_ = scratchBlocks.bindEventWithChecks_(
-            this.getSvgRoot(),
-            "mousedown",
-            this,
-            this.onMouseDown_
-          );
-          const svgRoot = this.getSvgRoot();
-          if (svgRoot) {
-            svgRoot.style.cursor = "pointer";
+          /**
+           * Initalize the field.
+           */
+          init() {
+            if (this.fieldGroup_) {
+              return;
+            }
+            super.init();
+            this.mouseDownWrapper_ = scratchBlocks.bindEventWithChecks_(
+              this.getSvgRoot(),
+              "mousedown",
+              this,
+              this.onMouseDown_
+            );
+            const svgRoot = this.getSvgRoot();
+            if (svgRoot) {
+              svgRoot.style.cursor = "pointer";
+            }
           }
-        }
-        /**
-         * Click handler.
-         */
-        showEditor_() {
-          if (this.callback) {
-            this.callback();
+          /**
+           * Click handler.
+           */
+          showEditor_() {
+            if (this.callback) {
+              this.callback();
+            }
           }
-        }
-        /**
-         * Calculates the size of the field.
-         * @returns Size of the field.
-         */
-        getSize() {
-          if (!this.size_.width) {
-            this.render_();
+          /**
+           * Calculates the size of the field.
+           * @returns Size of the field.
+           */
+          getSize() {
+            if (!this.size_.width) {
+              this.render_();
+            }
+            if (this.padding) return this.size_;
+            return new this.size_.constructor(
+              Math.max(
+                1,
+                this.size_.width - scratchBlocks.BlockSvg.SEP_SPACE_X
+              ),
+              this.size_.height
+            );
           }
-          if (this.padding)
-            return this.size_;
-          return new this.size_.constructor(
-            Math.max(1, this.size_.width - scratchBlocks.BlockSvg.SEP_SPACE_X),
-            this.size_.height
-          );
-        }
-        EDITABLE = true;
-      });
+          EDITABLE = true;
+        })
+      );
     };
   })();
-  var plusImage = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTggMTBoLTR2LTRjMC0xLjEwNC0uODk2LTItMi0ycy0yIC44OTYtMiAybC4wNzEgNGgtNC4wNzFjLTEuMTA0IDAtMiAuODk2LTIgMnMuODk2IDIgMiAybDQuMDcxLS4wNzEtLjA3MSA0LjA3MWMwIDEuMTA0Ljg5NiAyIDIgMnMyLS44OTYgMi0ydi00LjA3MWw0IC4wNzFjMS4xMDQgMCAyLS44OTYgMi0ycy0uODk2LTItMi0yeiIgZmlsbD0id2hpdGUiIC8+PC9zdmc+Cg==";
-  var minusImage = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTggMTFoLTEyYy0xLjEwNCAwLTIgLjg5Ni0yIDJzLjg5NiAyIDIgMmgxMmMxLjEwNCAwIDItLjg5NiAyLTJzLS44OTYtMi0yLTJ6IiBmaWxsPSJ3aGl0ZSIgLz48L3N2Zz4K";
+  var plusImage =
+    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTggMTBoLTR2LTRjMC0xLjEwNC0uODk2LTItMi0ycy0yIC44OTYtMiAybC4wNzEgNGgtNC4wNzFjLTEuMTA0IDAtMiAuODk2LTIgMnMuODk2IDIgMiAybDQuMDcxLS4wNzEtLjA3MSA0LjA3MWMwIDEuMTA0Ljg5NiAyIDIgMnMyLS44OTYgMi0ydi00LjA3MWw0IC4wNzFjMS4xMDQgMCAyLS44OTYgMi0ycy0uODk2LTItMi0yeiIgZmlsbD0id2hpdGUiIC8+PC9zdmc+Cg==";
+  var minusImage =
+    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTggMTFoLTEyYy0xLjEwNCAwLTIgLjg5Ni0yIDJzLjg5NiAyIDIgMmgxMmMxLjEwNCAwIDItLjg5NiAyLTJzLS44OTYtMi0yLTJ6IiBmaWxsPSJ3aGl0ZSIgLz48L3N2Zz4K";
   function defineExtension(id, color, runtime, translate) {
     const Plus = (Blockly, block) => {
       const FieldImageButton = initalizeField(Blockly);
@@ -3774,30 +3976,31 @@
         true
       );
     };
-    const updateButton = (Blockly, block, minValue = 0, maxValue = Infinity) => {
+    const updateButton = (
+      Blockly,
+      block,
+      minValue = 0,
+      maxValue = Infinity
+    ) => {
       if (block.length !== void 0) {
         block.removeInput("MINUS", true);
         block.removeInput("PLUS", true);
         const start = block.inputList[0]?.name;
         if (block.length < maxValue) {
           block.appendDummyInput("PLUS").appendField(Plus(Blockly, block));
-          if (start)
-            block.moveInputBefore("PLUS", start);
+          if (start) block.moveInputBefore("PLUS", start);
         }
         if (block.length > minValue) {
           block.appendDummyInput("MINUS").appendField(Minus(Blockly, block));
-          if (start)
-            block.moveInputBefore("MINUS", start);
+          if (start) block.moveInputBefore("MINUS", start);
         }
       }
     };
     function cleanInputs(id2, targetInput) {
       const target = runtime.getEditingTarget();
-      if (!target)
-        return;
+      if (!target) return;
       const block = target.blocks.getBlock(id2);
-      if (!block)
-        return;
+      if (!block) return;
       const inputs = block.inputs;
       for (const name of Object.keys(inputs)) {
         const input = inputs[name];
@@ -3809,737 +4012,785 @@
         }
       }
     }
-    return new Extension(id, color).register(
-      /// Documentation
-      new Button(
-        "documentation",
-        () => `\u{1F4C4} ${translate({ id: "lpp.documentation", default: "Open documentation", description: "Documentation button." })}`
-      )
-    ).register(
-      /// Builtin
-      new Category(
-        () => `#\uFE0F\u20E3 ${translate({ id: "lpp.category.builtin", default: "Builtin", description: "Builtin category." })}`
-      ).register(
-        "builtinType",
-        Reporter.Round((Blockly, block) => () => {
-          block.setTooltip(
-            translate({
-              id: "lpp.tooltip.builtin.type",
-              default: "Predefined builtin data types. Includes everything which language feature requires.",
-              description: "Builtin types tooltip."
-            })
-          );
-          block.appendDummyInput().appendField(
-            new Blockly.FieldDropdown([
-              ["Boolean", "Boolean"],
-              ["Number", "Number"],
-              ["String", "String"],
-              ["Array", "Array"],
-              ["Object", "Object"],
-              ["Function", "Function"],
-              ["Promise", "Promise"]
-            ]),
-            "value"
-          );
-        })
-      ).register(
-        "builtinError",
-        Reporter.Round((Blockly, block) => () => {
-          block.setTooltip(
-            translate({
-              id: "lpp.tooltip.builtin.error",
-              default: "Predefined builtin error types. Includes all errors which builtin classes throw.",
-              description: "Builtin errors tooltip."
-            })
-          );
-          block.appendDummyInput().appendField(
-            new Blockly.FieldDropdown([
-              ["Error", "Error"],
-              ["IllegalInvocationError", "IllegalInvocationError"],
-              ["SyntaxError", "SyntaxError"]
-            ]),
-            "value"
-          );
-        })
-      ).register(
-        "builtinUtility",
-        Reporter.Round((Blockly, block) => () => {
-          block.setTooltip(
-            translate({
-              id: "lpp.tooltip.builtin.utility",
-              default: "Predefined builtin utility types. Includes methods to process data.",
-              description: "Builtin utilities tooltip."
-            })
-          );
-          block.appendDummyInput().appendField(
-            new Blockly.FieldDropdown([
-              ["JSON", "JSON"],
-              ["Math", "Math"]
-            ]),
-            "value"
-          );
-        })
-      )
-    ).register(
-      /// Construct
-      new Category(
-        () => `\u{1F6A7} ${translate({ id: "lpp.category.construct", default: "Construction", description: "Construction category." })}`
-      ).register(
-        "constructLiteral",
-        Reporter.Round((Blockly, block) => () => {
-          block.setTooltip(
-            translate({
-              id: "lpp.tooltip.construct.literal",
-              default: "Construct special literals in lpp.",
-              description: "Literal tooltip."
-            })
-          );
-          block.appendDummyInput().appendField(
-            new Blockly.FieldDropdown([
-              ["null", "null"],
-              ["true", "true"],
-              ["false", "false"],
-              ["NaN", "NaN"],
-              ["Infinity", "Infinity"]
-            ]),
-            "value"
-          );
-        })
-      ).register(
-        "constructNumber",
-        Reporter.Square((_, block) => () => {
-          block.setTooltip(
-            translate({
-              id: "lpp.tooltip.construct.Number",
-              default: "Construct a Number object by Scratch literal.",
-              description: "Number constructor tooltip."
-            })
-          );
-          input_exports.Text(block, "BEGIN", [
-            translate({
-              id: "lpp.block.construct.Number",
-              default: "Number",
-              description: "Number constructor block."
-            }),
-            "("
-          ]);
-          input_exports.String(block, "value", "10");
-          input_exports.Text(block, "END", `)`);
-        })
-      ).register(
-        "constructString",
-        Reporter.Square((_, block) => () => {
-          block.setTooltip(
-            translate({
-              id: "lpp.tooltip.construct.String",
-              default: "Construct a String object by Scratch literal.",
-              description: "String constructor tooltip."
-            })
-          );
-          input_exports.Text(block, "BEGIN", [
-            translate({
-              id: "lpp.block.construct.String",
-              default: "String",
-              description: "String constructor block."
-            }),
-            "("
-          ]);
-          input_exports.String(block, "value", "\u{1F31F}");
-          input_exports.Text(block, "END", `)`);
-        })
-      ).register(
-        "constructArray",
-        Reporter.Square((Blockly, block) => ({
-          init() {
-            block.setTooltip(
-              translate({
-                id: "lpp.tooltip.construct.Array",
-                default: 'Construct an Array object with specified structure. Use "+" to add or "-" to remove an element.',
-                description: "Array constructor tooltip."
-              })
-            );
-            const property = block;
-            input_exports.Text(block, "BEGIN", "[");
-            input_exports.Text(block, "END", "]");
-            property.length = 0;
-            updateButton(Blockly, property);
-          },
-          mutationToDom() {
-            const elem = document.createElement("mutation");
-            if (isMutableBlock(block)) {
-              elem.setAttribute("length", String(block.length));
-            }
-            return elem;
-          },
-          domToMutation(mutation) {
-            const length = parseInt(
-              mutation.getAttribute("length") ?? "0",
-              10
-            );
-            if (isMutableBlock(block)) {
-              if (length > block.length) {
-                for (let i = block.length; i < length; i++) {
-                  if (i > 0) {
-                    block.appendDummyInput(`COMMA_${i}`).appendField(",");
-                    block.moveInputBefore(`COMMA_${i}`, "END");
-                  }
-                  input_exports.Any(block, `ARG_${i}`);
-                  block.moveInputBefore(`ARG_${i}`, "END");
-                }
-              } else {
-                const removeList = [];
-                for (let i = length; i < block.length; i++) {
-                  block.removeInput(`ARG_${i}`, true);
-                  block.removeInput(`COMMA_${i}`, true);
-                  removeList.push(`ARG_${i}`, `COMMA_${i}`);
-                }
-                cleanInputs(block.id, removeList);
-              }
-              block.length = length;
-              updateButton(Blockly, block);
-            }
-          }
-        }))
-      ).register(
-        "constructObject",
-        Reporter.Square((Blockly, block) => ({
-          init() {
-            block.setTooltip(
-              translate({
-                id: "lpp.tooltip.construct.Object",
-                default: 'Construct an Object object with specified structure. Use "+" to add or "-" to remove an element.',
-                description: "Object constructor tooltip."
-              })
-            );
-            const property = block;
-            input_exports.Text(block, "BEGIN", "{");
-            input_exports.Text(block, "END", "}");
-            property.length = 0;
-            updateButton(Blockly, property);
-          },
-          mutationToDom() {
-            const elem = document.createElement("mutation");
-            if (isMutableBlock(block)) {
-              elem.setAttribute("length", String(block.length));
-            }
-            return elem;
-          },
-          domToMutation(mutation) {
-            const length = parseInt(
-              mutation.getAttribute("length") ?? "0",
-              10
-            );
-            if (isMutableBlock(block)) {
-              if (length > block.length) {
-                for (let i = block.length; i < length; i++) {
-                  if (i > 0) {
-                    block.appendDummyInput(`COMMA_${i}`).appendField(",");
-                    block.moveInputBefore(`COMMA_${i}`, "END");
-                  }
-                  input_exports.String(block, `KEY_${i}`, "");
-                  input_exports.Text(block, `COLON_${i}`, ":");
-                  input_exports.Any(block, `VALUE_${i}`);
-                  block.moveInputBefore(`VALUE_${i}`, "END");
-                  block.moveInputBefore(`COLON_${i}`, `VALUE_${i}`);
-                  block.moveInputBefore(`KEY_${i}`, `COLON_${i}`);
-                }
-              } else {
-                const removeList = [];
-                for (let i = length; i < block.length; i++) {
-                  block.removeInput(`KEY_${i}`, true);
-                  block.removeInput(`COLON_${i}`, true);
-                  block.removeInput(`VALUE_${i}`, true);
-                  block.removeInput(`COMMA_${i}`, true);
-                  removeList.push(
-                    `KEY_${i}`,
-                    `COLON_${i}`,
-                    `VALUE_${i}`,
-                    `COMMA_${i}`
-                  );
-                }
-                cleanInputs(block.id, removeList);
-              }
-              block.length = length;
-              updateButton(Blockly, block);
-            }
-          }
-        }))
-      ).register(
-        "constructFunction",
-        Reporter.Square((Blockly, block) => ({
-          init() {
-            block.setTooltip(
-              translate({
-                id: "lpp.tooltip.construct.Function",
-                default: 'Construct an Function object. Use "+" to add or "-" to remove an argument.',
-                description: "Function constructor tooltip."
-              })
-            );
-            const property = block;
-            input_exports.Text(block, "BEGIN", [
-              translate({
-                id: "lpp.block.construct.Function",
-                default: "function",
-                description: "Function constructor block."
-              }),
-              "("
-            ]);
-            input_exports.Text(block, "END", ")");
-            input_exports.Statement(block, "SUBSTACK");
-            property.length = 0;
-            updateButton(Blockly, property);
-          },
-          mutationToDom() {
-            const elem = document.createElement("mutation");
-            if (isMutableBlock(block)) {
-              elem.setAttribute("length", String(block.length));
-            }
-            return elem;
-          },
-          domToMutation(mutation) {
-            const length = parseInt(
-              mutation.getAttribute("length") ?? "0",
-              10
-            );
-            if (isMutableBlock(block)) {
-              if (length > block.length) {
-                for (let i = block.length; i < length; i++) {
-                  if (i > 0) {
-                    block.appendDummyInput(`COMMA_${i}`).appendField(",");
-                    block.moveInputBefore(`COMMA_${i}`, "END");
-                  }
-                  input_exports.String(block, `ARG_${i}`, "");
-                  block.moveInputBefore(`ARG_${i}`, "END");
-                }
-              } else {
-                const removeList = [];
-                for (let i = length; i < block.length; i++) {
-                  block.removeInput(`ARG_${i}`, true);
-                  block.removeInput(`COMMA_${i}`, true);
-                  removeList.push(`ARG_${i}`, `COMMA_${i}`);
-                }
-                cleanInputs(block.id, removeList);
-              }
-              block.length = length;
-              updateButton(Blockly, block);
-            }
-          }
-        }))
-      ).register(
-        "constructAsyncFunction",
-        Reporter.Square((Blockly, block) => ({
-          init() {
-            block.setTooltip(
-              translate({
-                id: "lpp.tooltip.construct.AsyncFunction",
-                default: 'Construct an asynchronous Function object. Use "+" to add or "-" to remove an argument.',
-                description: "Asynchronous function constructor tooltip."
-              })
-            );
-            const property = block;
-            input_exports.Text(block, "BEGIN", [
-              translate({
-                id: "lpp.block.construct.AsyncFunction",
-                default: "async function",
-                description: "Asynchronous function constructor block."
-              }),
-              "("
-            ]);
-            input_exports.Text(block, "END", ")");
-            input_exports.Statement(block, "SUBSTACK");
-            property.length = 0;
-            updateButton(Blockly, property);
-          },
-          mutationToDom() {
-            const elem = document.createElement("mutation");
-            if (isMutableBlock(block)) {
-              elem.setAttribute("length", String(block.length));
-            }
-            return elem;
-          },
-          domToMutation(mutation) {
-            const length = parseInt(
-              mutation.getAttribute("length") ?? "0",
-              10
-            );
-            if (isMutableBlock(block)) {
-              if (length > block.length) {
-                for (let i = block.length; i < length; i++) {
-                  if (i > 0) {
-                    block.appendDummyInput(`COMMA_${i}`).appendField(",");
-                    block.moveInputBefore(`COMMA_${i}`, "END");
-                  }
-                  input_exports.String(block, `ARG_${i}`, "");
-                  block.moveInputBefore(`ARG_${i}`, "END");
-                }
-              } else {
-                const removeList = [];
-                for (let i = length; i < block.length; i++) {
-                  block.removeInput(`ARG_${i}`, true);
-                  block.removeInput(`COMMA_${i}`, true);
-                  removeList.push(`ARG_${i}`, `COMMA_${i}`);
-                }
-                cleanInputs(block.id, removeList);
-              }
-              block.length = length;
-              updateButton(Blockly, block);
-            }
-          }
-        }))
-      )
-    ).register(
-      new Category(
-        () => `\u{1F522} ${translate({ id: "lpp.category.operator", default: "Operator", description: "Operator category." })}`
-      ).register(
-        "binaryOp",
-        Reporter.Square((Blockly, block) => ({
-          init() {
-            block.setTooltip(
-              translate({
-                id: "lpp.tooltip.operator.binaryOp",
-                default: "Do binary operations.",
-                description: "Binary operations tooltip."
-              })
-            );
-            block.appendDummyInput("END");
-            const property = block;
-            property.length = 0;
-            if (block.domToMutation && block.mutationToDom)
-              block.domToMutation(block.mutationToDom());
-            updateButton(Blockly, property, 2);
-          },
-          mutationToDom() {
-            const elem = document.createElement("mutation");
-            if (isMutableBlock(block)) {
-              elem.setAttribute("length", String(block.length));
-            }
-            return elem;
-          },
-          domToMutation(mutation) {
-            const length = Math.max(
-              2,
-              parseInt(mutation.getAttribute("length") ?? "0", 10)
-            );
-            if (isMutableBlock(block)) {
-              if (length > block.length) {
-                for (let i = block.length; i < length; i++) {
-                  if (i > 0) {
-                    block.appendDummyInput(`OP_${i}`).appendField(
-                      new Blockly.FieldDropdown([
-                        [".", "."],
-                        ["?.", "?."],
-                        ["**", "**"],
-                        ["*", "*"],
-                        ["/", "/"],
-                        ["+", "+"],
-                        ["%", "%"],
-                        ["-", "-"],
-                        ["<<", "<<"],
-                        [">>", ">>"],
-                        [">>>", ">>>"],
-                        ["<", "<"],
-                        ["<=", "<="],
-                        [">", ">"],
-                        [">=", ">="],
-                        ["in", "in"],
-                        ["instanceof", "instanceof"],
-                        ["==", "=="],
-                        ["!=", "!="],
-                        ["&", "&"],
-                        ["^", "^"],
-                        ["|", "|"],
-                        ["&&", "&&"],
-                        ["||", "||"],
-                        ["=", "="],
-                        [",", ","]
-                      ]),
-                      `OP_${i}`
-                    );
-                    const fields = runtime.getEditingTarget()?.blocks.getBlock(block.id)?.fields;
-                    if (fields)
-                      fields[`OP_${i}`] = {
-                        id: null,
-                        name: `OP_${i}`,
-                        value: "."
-                      };
-                    block.moveInputBefore(`OP_${i}`, "END");
-                  }
-                  input_exports.String(block, `ARG_${i}`, "");
-                  block.moveInputBefore(`ARG_${i}`, "END");
-                }
-              } else {
-                const removeList = [];
-                for (let i = length; i < block.length; i++) {
-                  block.removeInput(`ARG_${i}`, true);
-                  block.removeInput(`OP_${i}`, true);
-                  const fields = runtime.getEditingTarget()?.blocks.getBlock(block.id)?.fields;
-                  if (fields)
-                    delete fields[`OP_${i}`];
-                  removeList.push(`ARG_${i}`);
-                }
-                cleanInputs(block.id, removeList);
-              }
-              block.length = length;
-              updateButton(Blockly, block, 2);
-            }
-          }
-        }))
-      ).register(
-        "unaryOp",
-        Reporter.Square((Blockly, block) => () => {
-          block.setTooltip(
-            translate({
-              id: "lpp.tooltip.operator.unaryOp",
-              default: "Do unary operations.",
-              description: "Unary operations tooltip."
-            })
-          );
-          block.appendDummyInput().appendField(
-            new Blockly.FieldDropdown([
-              ["+", "+"],
-              ["-", "-"],
-              ["!", "!"],
-              ["~", "~"],
-              ["...", "..."],
-              ["delete", "delete"],
-              ["await", "await"],
-              ["yield", "yield"],
-              ["yield*", "yield*"]
-            ]),
-            "op"
-          );
-          input_exports.Any(block, "value");
-        })
-      ).register(
-        "new",
-        Reporter.Square((Blockly, block) => ({
-          init() {
-            block.setTooltip(
-              translate({
-                id: "lpp.tooltip.operator.new",
-                default: 'Construct an instance with given constructor and arguments. Use "+" to add or "-" to remove an argument.',
-                description: "New operator tooltip."
-              })
-            );
-            const property = block;
-            input_exports.Text(block, "LABEL", "new");
-            input_exports.Any(block, "fn");
-            input_exports.Text(block, "BEGIN", "(");
-            input_exports.Text(block, "END", ")");
-            property.length = 0;
-            updateButton(Blockly, property);
-          },
-          mutationToDom() {
-            const elem = document.createElement("mutation");
-            if (isMutableBlock(block)) {
-              elem.setAttribute("length", String(block.length));
-            }
-            return elem;
-          },
-          domToMutation(mutation) {
-            const length = parseInt(
-              mutation.getAttribute("length") ?? "0",
-              10
-            );
-            if (isMutableBlock(block)) {
-              if (length > block.length) {
-                for (let i = block.length; i < length; i++) {
-                  if (i > 0) {
-                    block.appendDummyInput(`COMMA_${i}`).appendField(",");
-                    block.moveInputBefore(`COMMA_${i}`, "END");
-                  }
-                  input_exports.Any(block, `ARG_${i}`);
-                  block.moveInputBefore(`ARG_${i}`, "END");
-                }
-              } else {
-                const removeList = [];
-                for (let i = length; i < block.length; i++) {
-                  block.removeInput(`ARG_${i}`, true);
-                  block.removeInput(`COMMA_${i}`, true);
-                  removeList.push(`ARG_${i}`, `COMMA_${i}`);
-                }
-                cleanInputs(block.id, removeList);
-              }
-              block.length = length;
-              updateButton(Blockly, block);
-            }
-          }
-        }))
-      ).register(
-        "call",
-        Reporter.Square((Blockly, block) => ({
-          init() {
-            block.setTooltip(
-              translate({
-                id: "lpp.tooltip.operator.call",
-                default: 'Call function with given arguments. Use "+" to add or "-" to remove an argument.',
-                description: "Call operator tooltip."
-              })
-            );
-            const property = block;
-            input_exports.Any(block, "fn");
-            input_exports.Text(block, "BEGIN", "(");
-            input_exports.Text(block, "END", ")");
-            property.length = 0;
-            updateButton(Blockly, property);
-          },
-          mutationToDom() {
-            const elem = document.createElement("mutation");
-            if (isMutableBlock(block)) {
-              elem.setAttribute("length", String(block.length));
-            }
-            return elem;
-          },
-          domToMutation(mutation) {
-            const length = parseInt(
-              mutation.getAttribute("length") ?? "0",
-              10
-            );
-            if (isMutableBlock(block)) {
-              if (length > block.length) {
-                for (let i = block.length; i < length; i++) {
-                  if (i > 0) {
-                    block.appendDummyInput(`COMMA_${i}`).appendField(",");
-                    block.moveInputBefore(`COMMA_${i}`, "END");
-                  }
-                  input_exports.Any(block, `ARG_${i}`);
-                  block.moveInputBefore(`ARG_${i}`, "END");
-                }
-              } else {
-                const removeList = [];
-                for (let i = length; i < block.length; i++) {
-                  block.removeInput(`ARG_${i}`, true);
-                  block.removeInput(`COMMA_${i}`, true);
-                  removeList.push(`ARG_${i}`, `COMMA_${i}`);
-                }
-                cleanInputs(block.id, removeList);
-              }
-              block.length = length;
-              updateButton(Blockly, block);
-            }
-          }
-        }))
-      ).register(
-        "self",
-        Reporter.Round((_, block) => () => {
-          block.setTooltip(
-            translate({
-              id: "lpp.tooltip.operator.self",
-              default: "Get the reference of self object in function context.",
-              description: "Self (aka this) tooltip."
-            })
-          );
-          block.setCheckboxInFlyout(false);
-          input_exports.Text(block, "LABEL", "this");
-        })
-      ).register(
-        "var",
-        Reporter.Round((_, block) => () => {
-          block.setTooltip(
-            translate({
-              id: "lpp.tooltip.operator.var",
-              default: "Get the reference of a specified local variable or an argument.",
-              description: "Variable operator tooltip."
-            })
-          );
-          input_exports.Text(
-            block,
-            "LABEL",
-            translate({
-              id: "lpp.block.operator.var",
-              default: "var",
-              description: "Var operator block."
-            })
-          );
-          input_exports.String(block, "name", "\u{1F43A}");
-        })
-      )
-    ).register(
-      new Category(
-        () => `\u{1F916} ${translate({ id: "lpp.category.statement", default: "Statement", description: "Statement category." })}`
-      ).register(
-        "return",
-        Command(
-          (_, block) => () => {
-            block.setTooltip(
-              translate({
-                id: "lpp.tooltip.statement.return",
-                default: "Return a value from the function.",
-                description: "Return statement tooltip."
-              })
-            );
-            input_exports.Text(block, "LABEL", "return");
-            input_exports.Any(block, "value");
-          },
-          true
+    return new Extension(id, color)
+      .register(
+        /// Documentation
+        new Button(
+          "documentation",
+          () =>
+            `\u{1F4C4} ${translate({ id: "lpp.documentation", default: "Open documentation", description: "Documentation button." })}`
         )
-      ).register(
-        "throw",
-        Command(
-          (_, block) => () => {
-            block.setTooltip(
-              translate({
-                id: "lpp.tooltip.statement.throw",
-                default: "Throw a value. It will interrupt current control flow immediately.",
-                description: "Throw statement tooltip."
-              })
-            );
-            input_exports.Text(block, "LABEL", "throw");
-            input_exports.Any(block, "value");
-          },
-          true
-        )
-      ).register(
-        "scope",
-        Command((_, block) => () => {
-          block.setTooltip(
-            translate({
-              id: "lpp.tooltip.statement.scope",
-              default: "Create a lpp scope and execute the code in it.",
-              description: "Scope statement tooltip."
-            })
-          );
-          input_exports.Text(
-            block,
-            "LABEL",
-            translate({
-              id: "lpp.block.statement.scope",
-              default: "scope",
-              description: "Scope statement block."
-            })
-          );
-          input_exports.Statement(block, "SUBSTACK");
-        })
-      ).register(
-        "try",
-        Command((_, block) => () => {
-          block.setTooltip(
-            translate({
-              id: "lpp.tooltip.statement.try",
-              default: "Try capturing exceptions in specified statements. If an exception is thrown, set the specified reference to error object, then execute exception handling code.",
-              description: "Try-catch statement tooltip."
-            })
-          );
-          input_exports.Text(block, "TRY", "try");
-          input_exports.Statement(block, "SUBSTACK");
-          input_exports.Text(block, "CATCH", "catch");
-          input_exports.Any(block, "var");
-          input_exports.Statement(block, "SUBSTACK_2");
-        })
-      ).register(
-        "nop",
-        Command((_, block) => () => {
-          block.setTooltip(
-            translate({
-              id: "lpp.tooltip.statement.nop",
-              default: "Does nothing. It is used to convert a Scratch reporter into a statement.",
-              description: "No-op block tooltip."
-            })
-          );
-          input_exports.Any(block, "value");
-        })
       )
-    );
+      .register(
+        /// Builtin
+        new Category(
+          () =>
+            `#\uFE0F\u20E3 ${translate({ id: "lpp.category.builtin", default: "Builtin", description: "Builtin category." })}`
+        )
+          .register(
+            "builtinType",
+            Reporter.Round((Blockly, block) => () => {
+              block.setTooltip(
+                translate({
+                  id: "lpp.tooltip.builtin.type",
+                  default:
+                    "Predefined builtin data types. Includes everything which language feature requires.",
+                  description: "Builtin types tooltip.",
+                })
+              );
+              block.appendDummyInput().appendField(
+                new Blockly.FieldDropdown([
+                  ["Boolean", "Boolean"],
+                  ["Number", "Number"],
+                  ["String", "String"],
+                  ["Array", "Array"],
+                  ["Object", "Object"],
+                  ["Function", "Function"],
+                  ["Promise", "Promise"],
+                ]),
+                "value"
+              );
+            })
+          )
+          .register(
+            "builtinError",
+            Reporter.Round((Blockly, block) => () => {
+              block.setTooltip(
+                translate({
+                  id: "lpp.tooltip.builtin.error",
+                  default:
+                    "Predefined builtin error types. Includes all errors which builtin classes throw.",
+                  description: "Builtin errors tooltip.",
+                })
+              );
+              block.appendDummyInput().appendField(
+                new Blockly.FieldDropdown([
+                  ["Error", "Error"],
+                  ["IllegalInvocationError", "IllegalInvocationError"],
+                  ["SyntaxError", "SyntaxError"],
+                ]),
+                "value"
+              );
+            })
+          )
+          .register(
+            "builtinUtility",
+            Reporter.Round((Blockly, block) => () => {
+              block.setTooltip(
+                translate({
+                  id: "lpp.tooltip.builtin.utility",
+                  default:
+                    "Predefined builtin utility types. Includes methods to process data.",
+                  description: "Builtin utilities tooltip.",
+                })
+              );
+              block.appendDummyInput().appendField(
+                new Blockly.FieldDropdown([
+                  ["JSON", "JSON"],
+                  ["Math", "Math"],
+                ]),
+                "value"
+              );
+            })
+          )
+      )
+      .register(
+        /// Construct
+        new Category(
+          () =>
+            `\u{1F6A7} ${translate({ id: "lpp.category.construct", default: "Construction", description: "Construction category." })}`
+        )
+          .register(
+            "constructLiteral",
+            Reporter.Round((Blockly, block) => () => {
+              block.setTooltip(
+                translate({
+                  id: "lpp.tooltip.construct.literal",
+                  default: "Construct special literals in lpp.",
+                  description: "Literal tooltip.",
+                })
+              );
+              block.appendDummyInput().appendField(
+                new Blockly.FieldDropdown([
+                  ["null", "null"],
+                  ["true", "true"],
+                  ["false", "false"],
+                  ["NaN", "NaN"],
+                  ["Infinity", "Infinity"],
+                ]),
+                "value"
+              );
+            })
+          )
+          .register(
+            "constructNumber",
+            Reporter.Square((_, block) => () => {
+              block.setTooltip(
+                translate({
+                  id: "lpp.tooltip.construct.Number",
+                  default: "Construct a Number object by Scratch literal.",
+                  description: "Number constructor tooltip.",
+                })
+              );
+              input_exports.Text(block, "BEGIN", [
+                translate({
+                  id: "lpp.block.construct.Number",
+                  default: "Number",
+                  description: "Number constructor block.",
+                }),
+                "(",
+              ]);
+              input_exports.String(block, "value", "10");
+              input_exports.Text(block, "END", `)`);
+            })
+          )
+          .register(
+            "constructString",
+            Reporter.Square((_, block) => () => {
+              block.setTooltip(
+                translate({
+                  id: "lpp.tooltip.construct.String",
+                  default: "Construct a String object by Scratch literal.",
+                  description: "String constructor tooltip.",
+                })
+              );
+              input_exports.Text(block, "BEGIN", [
+                translate({
+                  id: "lpp.block.construct.String",
+                  default: "String",
+                  description: "String constructor block.",
+                }),
+                "(",
+              ]);
+              input_exports.String(block, "value", "\u{1F31F}");
+              input_exports.Text(block, "END", `)`);
+            })
+          )
+          .register(
+            "constructArray",
+            Reporter.Square((Blockly, block) => ({
+              init() {
+                block.setTooltip(
+                  translate({
+                    id: "lpp.tooltip.construct.Array",
+                    default:
+                      'Construct an Array object with specified structure. Use "+" to add or "-" to remove an element.',
+                    description: "Array constructor tooltip.",
+                  })
+                );
+                const property = block;
+                input_exports.Text(block, "BEGIN", "[");
+                input_exports.Text(block, "END", "]");
+                property.length = 0;
+                updateButton(Blockly, property);
+              },
+              mutationToDom() {
+                const elem = document.createElement("mutation");
+                if (isMutableBlock(block)) {
+                  elem.setAttribute("length", String(block.length));
+                }
+                return elem;
+              },
+              domToMutation(mutation) {
+                const length = parseInt(
+                  mutation.getAttribute("length") ?? "0",
+                  10
+                );
+                if (isMutableBlock(block)) {
+                  if (length > block.length) {
+                    for (let i = block.length; i < length; i++) {
+                      if (i > 0) {
+                        block.appendDummyInput(`COMMA_${i}`).appendField(",");
+                        block.moveInputBefore(`COMMA_${i}`, "END");
+                      }
+                      input_exports.Any(block, `ARG_${i}`);
+                      block.moveInputBefore(`ARG_${i}`, "END");
+                    }
+                  } else {
+                    const removeList = [];
+                    for (let i = length; i < block.length; i++) {
+                      block.removeInput(`ARG_${i}`, true);
+                      block.removeInput(`COMMA_${i}`, true);
+                      removeList.push(`ARG_${i}`, `COMMA_${i}`);
+                    }
+                    cleanInputs(block.id, removeList);
+                  }
+                  block.length = length;
+                  updateButton(Blockly, block);
+                }
+              },
+            }))
+          )
+          .register(
+            "constructObject",
+            Reporter.Square((Blockly, block) => ({
+              init() {
+                block.setTooltip(
+                  translate({
+                    id: "lpp.tooltip.construct.Object",
+                    default:
+                      'Construct an Object object with specified structure. Use "+" to add or "-" to remove an element.',
+                    description: "Object constructor tooltip.",
+                  })
+                );
+                const property = block;
+                input_exports.Text(block, "BEGIN", "{");
+                input_exports.Text(block, "END", "}");
+                property.length = 0;
+                updateButton(Blockly, property);
+              },
+              mutationToDom() {
+                const elem = document.createElement("mutation");
+                if (isMutableBlock(block)) {
+                  elem.setAttribute("length", String(block.length));
+                }
+                return elem;
+              },
+              domToMutation(mutation) {
+                const length = parseInt(
+                  mutation.getAttribute("length") ?? "0",
+                  10
+                );
+                if (isMutableBlock(block)) {
+                  if (length > block.length) {
+                    for (let i = block.length; i < length; i++) {
+                      if (i > 0) {
+                        block.appendDummyInput(`COMMA_${i}`).appendField(",");
+                        block.moveInputBefore(`COMMA_${i}`, "END");
+                      }
+                      input_exports.String(block, `KEY_${i}`, "");
+                      input_exports.Text(block, `COLON_${i}`, ":");
+                      input_exports.Any(block, `VALUE_${i}`);
+                      block.moveInputBefore(`VALUE_${i}`, "END");
+                      block.moveInputBefore(`COLON_${i}`, `VALUE_${i}`);
+                      block.moveInputBefore(`KEY_${i}`, `COLON_${i}`);
+                    }
+                  } else {
+                    const removeList = [];
+                    for (let i = length; i < block.length; i++) {
+                      block.removeInput(`KEY_${i}`, true);
+                      block.removeInput(`COLON_${i}`, true);
+                      block.removeInput(`VALUE_${i}`, true);
+                      block.removeInput(`COMMA_${i}`, true);
+                      removeList.push(
+                        `KEY_${i}`,
+                        `COLON_${i}`,
+                        `VALUE_${i}`,
+                        `COMMA_${i}`
+                      );
+                    }
+                    cleanInputs(block.id, removeList);
+                  }
+                  block.length = length;
+                  updateButton(Blockly, block);
+                }
+              },
+            }))
+          )
+          .register(
+            "constructFunction",
+            Reporter.Square((Blockly, block) => ({
+              init() {
+                block.setTooltip(
+                  translate({
+                    id: "lpp.tooltip.construct.Function",
+                    default:
+                      'Construct an Function object. Use "+" to add or "-" to remove an argument.',
+                    description: "Function constructor tooltip.",
+                  })
+                );
+                const property = block;
+                input_exports.Text(block, "BEGIN", [
+                  translate({
+                    id: "lpp.block.construct.Function",
+                    default: "function",
+                    description: "Function constructor block.",
+                  }),
+                  "(",
+                ]);
+                input_exports.Text(block, "END", ")");
+                input_exports.Statement(block, "SUBSTACK");
+                property.length = 0;
+                updateButton(Blockly, property);
+              },
+              mutationToDom() {
+                const elem = document.createElement("mutation");
+                if (isMutableBlock(block)) {
+                  elem.setAttribute("length", String(block.length));
+                }
+                return elem;
+              },
+              domToMutation(mutation) {
+                const length = parseInt(
+                  mutation.getAttribute("length") ?? "0",
+                  10
+                );
+                if (isMutableBlock(block)) {
+                  if (length > block.length) {
+                    for (let i = block.length; i < length; i++) {
+                      if (i > 0) {
+                        block.appendDummyInput(`COMMA_${i}`).appendField(",");
+                        block.moveInputBefore(`COMMA_${i}`, "END");
+                      }
+                      input_exports.String(block, `ARG_${i}`, "");
+                      block.moveInputBefore(`ARG_${i}`, "END");
+                    }
+                  } else {
+                    const removeList = [];
+                    for (let i = length; i < block.length; i++) {
+                      block.removeInput(`ARG_${i}`, true);
+                      block.removeInput(`COMMA_${i}`, true);
+                      removeList.push(`ARG_${i}`, `COMMA_${i}`);
+                    }
+                    cleanInputs(block.id, removeList);
+                  }
+                  block.length = length;
+                  updateButton(Blockly, block);
+                }
+              },
+            }))
+          )
+          .register(
+            "constructAsyncFunction",
+            Reporter.Square((Blockly, block) => ({
+              init() {
+                block.setTooltip(
+                  translate({
+                    id: "lpp.tooltip.construct.AsyncFunction",
+                    default:
+                      'Construct an asynchronous Function object. Use "+" to add or "-" to remove an argument.',
+                    description: "Asynchronous function constructor tooltip.",
+                  })
+                );
+                const property = block;
+                input_exports.Text(block, "BEGIN", [
+                  translate({
+                    id: "lpp.block.construct.AsyncFunction",
+                    default: "async function",
+                    description: "Asynchronous function constructor block.",
+                  }),
+                  "(",
+                ]);
+                input_exports.Text(block, "END", ")");
+                input_exports.Statement(block, "SUBSTACK");
+                property.length = 0;
+                updateButton(Blockly, property);
+              },
+              mutationToDom() {
+                const elem = document.createElement("mutation");
+                if (isMutableBlock(block)) {
+                  elem.setAttribute("length", String(block.length));
+                }
+                return elem;
+              },
+              domToMutation(mutation) {
+                const length = parseInt(
+                  mutation.getAttribute("length") ?? "0",
+                  10
+                );
+                if (isMutableBlock(block)) {
+                  if (length > block.length) {
+                    for (let i = block.length; i < length; i++) {
+                      if (i > 0) {
+                        block.appendDummyInput(`COMMA_${i}`).appendField(",");
+                        block.moveInputBefore(`COMMA_${i}`, "END");
+                      }
+                      input_exports.String(block, `ARG_${i}`, "");
+                      block.moveInputBefore(`ARG_${i}`, "END");
+                    }
+                  } else {
+                    const removeList = [];
+                    for (let i = length; i < block.length; i++) {
+                      block.removeInput(`ARG_${i}`, true);
+                      block.removeInput(`COMMA_${i}`, true);
+                      removeList.push(`ARG_${i}`, `COMMA_${i}`);
+                    }
+                    cleanInputs(block.id, removeList);
+                  }
+                  block.length = length;
+                  updateButton(Blockly, block);
+                }
+              },
+            }))
+          )
+      )
+      .register(
+        new Category(
+          () =>
+            `\u{1F522} ${translate({ id: "lpp.category.operator", default: "Operator", description: "Operator category." })}`
+        )
+          .register(
+            "binaryOp",
+            Reporter.Square((Blockly, block) => ({
+              init() {
+                block.setTooltip(
+                  translate({
+                    id: "lpp.tooltip.operator.binaryOp",
+                    default: "Do binary operations.",
+                    description: "Binary operations tooltip.",
+                  })
+                );
+                block.appendDummyInput("END");
+                const property = block;
+                property.length = 0;
+                if (block.domToMutation && block.mutationToDom)
+                  block.domToMutation(block.mutationToDom());
+                updateButton(Blockly, property, 2);
+              },
+              mutationToDom() {
+                const elem = document.createElement("mutation");
+                if (isMutableBlock(block)) {
+                  elem.setAttribute("length", String(block.length));
+                }
+                return elem;
+              },
+              domToMutation(mutation) {
+                const length = Math.max(
+                  2,
+                  parseInt(mutation.getAttribute("length") ?? "0", 10)
+                );
+                if (isMutableBlock(block)) {
+                  if (length > block.length) {
+                    for (let i = block.length; i < length; i++) {
+                      if (i > 0) {
+                        block.appendDummyInput(`OP_${i}`).appendField(
+                          new Blockly.FieldDropdown([
+                            [".", "."],
+                            ["?.", "?."],
+                            ["**", "**"],
+                            ["*", "*"],
+                            ["/", "/"],
+                            ["+", "+"],
+                            ["%", "%"],
+                            ["-", "-"],
+                            ["<<", "<<"],
+                            [">>", ">>"],
+                            [">>>", ">>>"],
+                            ["<", "<"],
+                            ["<=", "<="],
+                            [">", ">"],
+                            [">=", ">="],
+                            ["in", "in"],
+                            ["instanceof", "instanceof"],
+                            ["==", "=="],
+                            ["!=", "!="],
+                            ["&", "&"],
+                            ["^", "^"],
+                            ["|", "|"],
+                            ["&&", "&&"],
+                            ["||", "||"],
+                            ["=", "="],
+                            [",", ","],
+                          ]),
+                          `OP_${i}`
+                        );
+                        const fields = runtime
+                          .getEditingTarget()
+                          ?.blocks.getBlock(block.id)?.fields;
+                        if (fields && !fields[`OP_${i}`])
+                          fields[`OP_${i}`] = {
+                            id: null,
+                            name: `OP_${i}`,
+                            value: ".",
+                          };
+                        block.moveInputBefore(`OP_${i}`, "END");
+                      }
+                      input_exports.String(block, `ARG_${i}`, "");
+                      block.moveInputBefore(`ARG_${i}`, "END");
+                    }
+                  } else {
+                    const removeList = [];
+                    for (let i = length; i < block.length; i++) {
+                      block.removeInput(`ARG_${i}`, true);
+                      block.removeInput(`OP_${i}`, true);
+                      const fields = runtime
+                        .getEditingTarget()
+                        ?.blocks.getBlock(block.id)?.fields;
+                      if (fields) delete fields[`OP_${i}`];
+                      removeList.push(`ARG_${i}`);
+                    }
+                    cleanInputs(block.id, removeList);
+                  }
+                  block.length = length;
+                  updateButton(Blockly, block, 2);
+                }
+              },
+            }))
+          )
+          .register(
+            "unaryOp",
+            Reporter.Square((Blockly, block) => () => {
+              block.setTooltip(
+                translate({
+                  id: "lpp.tooltip.operator.unaryOp",
+                  default: "Do unary operations.",
+                  description: "Unary operations tooltip.",
+                })
+              );
+              block.appendDummyInput().appendField(
+                new Blockly.FieldDropdown([
+                  ["+", "+"],
+                  ["-", "-"],
+                  ["!", "!"],
+                  ["~", "~"],
+                  ["...", "..."],
+                  ["delete", "delete"],
+                  ["await", "await"],
+                  ["yield", "yield"],
+                  ["yield*", "yield*"],
+                ]),
+                "op"
+              );
+              input_exports.Any(block, "value");
+            })
+          )
+          .register(
+            "new",
+            Reporter.Square((Blockly, block) => ({
+              init() {
+                block.setTooltip(
+                  translate({
+                    id: "lpp.tooltip.operator.new",
+                    default:
+                      'Construct an instance with given constructor and arguments. Use "+" to add or "-" to remove an argument.',
+                    description: "New operator tooltip.",
+                  })
+                );
+                const property = block;
+                input_exports.Text(block, "LABEL", "new");
+                input_exports.Any(block, "fn");
+                input_exports.Text(block, "BEGIN", "(");
+                input_exports.Text(block, "END", ")");
+                property.length = 0;
+                updateButton(Blockly, property);
+              },
+              mutationToDom() {
+                const elem = document.createElement("mutation");
+                if (isMutableBlock(block)) {
+                  elem.setAttribute("length", String(block.length));
+                }
+                return elem;
+              },
+              domToMutation(mutation) {
+                const length = parseInt(
+                  mutation.getAttribute("length") ?? "0",
+                  10
+                );
+                if (isMutableBlock(block)) {
+                  if (length > block.length) {
+                    for (let i = block.length; i < length; i++) {
+                      if (i > 0) {
+                        block.appendDummyInput(`COMMA_${i}`).appendField(",");
+                        block.moveInputBefore(`COMMA_${i}`, "END");
+                      }
+                      input_exports.Any(block, `ARG_${i}`);
+                      block.moveInputBefore(`ARG_${i}`, "END");
+                    }
+                  } else {
+                    const removeList = [];
+                    for (let i = length; i < block.length; i++) {
+                      block.removeInput(`ARG_${i}`, true);
+                      block.removeInput(`COMMA_${i}`, true);
+                      removeList.push(`ARG_${i}`, `COMMA_${i}`);
+                    }
+                    cleanInputs(block.id, removeList);
+                  }
+                  block.length = length;
+                  updateButton(Blockly, block);
+                }
+              },
+            }))
+          )
+          .register(
+            "call",
+            Reporter.Square((Blockly, block) => ({
+              init() {
+                block.setTooltip(
+                  translate({
+                    id: "lpp.tooltip.operator.call",
+                    default:
+                      'Call function with given arguments. Use "+" to add or "-" to remove an argument.',
+                    description: "Call operator tooltip.",
+                  })
+                );
+                const property = block;
+                input_exports.Any(block, "fn");
+                input_exports.Text(block, "BEGIN", "(");
+                input_exports.Text(block, "END", ")");
+                property.length = 0;
+                updateButton(Blockly, property);
+              },
+              mutationToDom() {
+                const elem = document.createElement("mutation");
+                if (isMutableBlock(block)) {
+                  elem.setAttribute("length", String(block.length));
+                }
+                return elem;
+              },
+              domToMutation(mutation) {
+                const length = parseInt(
+                  mutation.getAttribute("length") ?? "0",
+                  10
+                );
+                if (isMutableBlock(block)) {
+                  if (length > block.length) {
+                    for (let i = block.length; i < length; i++) {
+                      if (i > 0) {
+                        block.appendDummyInput(`COMMA_${i}`).appendField(",");
+                        block.moveInputBefore(`COMMA_${i}`, "END");
+                      }
+                      input_exports.Any(block, `ARG_${i}`);
+                      block.moveInputBefore(`ARG_${i}`, "END");
+                    }
+                  } else {
+                    const removeList = [];
+                    for (let i = length; i < block.length; i++) {
+                      block.removeInput(`ARG_${i}`, true);
+                      block.removeInput(`COMMA_${i}`, true);
+                      removeList.push(`ARG_${i}`, `COMMA_${i}`);
+                    }
+                    cleanInputs(block.id, removeList);
+                  }
+                  block.length = length;
+                  updateButton(Blockly, block);
+                }
+              },
+            }))
+          )
+          .register(
+            "self",
+            Reporter.Round((_, block) => () => {
+              block.setTooltip(
+                translate({
+                  id: "lpp.tooltip.operator.self",
+                  default:
+                    "Get the reference of self object in function context.",
+                  description: "Self (aka this) tooltip.",
+                })
+              );
+              block.setCheckboxInFlyout(false);
+              input_exports.Text(block, "LABEL", "this");
+            })
+          )
+          .register(
+            "var",
+            Reporter.Round((_, block) => () => {
+              block.setTooltip(
+                translate({
+                  id: "lpp.tooltip.operator.var",
+                  default:
+                    "Get the reference of a specified local variable or an argument.",
+                  description: "Variable operator tooltip.",
+                })
+              );
+              input_exports.Text(
+                block,
+                "LABEL",
+                translate({
+                  id: "lpp.block.operator.var",
+                  default: "var",
+                  description: "Var operator block.",
+                })
+              );
+              input_exports.String(block, "name", "\u{1F43A}");
+            })
+          )
+      )
+      .register(
+        new Category(
+          () =>
+            `\u{1F916} ${translate({ id: "lpp.category.statement", default: "Statement", description: "Statement category." })}`
+        )
+          .register(
+            "return",
+            Command(
+              (_, block) => () => {
+                block.setTooltip(
+                  translate({
+                    id: "lpp.tooltip.statement.return",
+                    default: "Return a value from the function.",
+                    description: "Return statement tooltip.",
+                  })
+                );
+                input_exports.Text(block, "LABEL", "return");
+                input_exports.Any(block, "value");
+              },
+              true
+            )
+          )
+          .register(
+            "throw",
+            Command(
+              (_, block) => () => {
+                block.setTooltip(
+                  translate({
+                    id: "lpp.tooltip.statement.throw",
+                    default:
+                      "Throw a value. It will interrupt current control flow immediately.",
+                    description: "Throw statement tooltip.",
+                  })
+                );
+                input_exports.Text(block, "LABEL", "throw");
+                input_exports.Any(block, "value");
+              },
+              true
+            )
+          )
+          .register(
+            "scope",
+            Command((_, block) => () => {
+              block.setTooltip(
+                translate({
+                  id: "lpp.tooltip.statement.scope",
+                  default: "Create a lpp scope and execute the code in it.",
+                  description: "Scope statement tooltip.",
+                })
+              );
+              input_exports.Text(
+                block,
+                "LABEL",
+                translate({
+                  id: "lpp.block.statement.scope",
+                  default: "scope",
+                  description: "Scope statement block.",
+                })
+              );
+              input_exports.Statement(block, "SUBSTACK");
+            })
+          )
+          .register(
+            "try",
+            Command((_, block) => () => {
+              block.setTooltip(
+                translate({
+                  id: "lpp.tooltip.statement.try",
+                  default:
+                    "Try capturing exceptions in specified statements. If an exception is thrown, set the specified reference to error object, then execute exception handling code.",
+                  description: "Try-catch statement tooltip.",
+                })
+              );
+              input_exports.Text(block, "TRY", "try");
+              input_exports.Statement(block, "SUBSTACK");
+              input_exports.Text(block, "CATCH", "catch");
+              input_exports.Any(block, "var");
+              input_exports.Statement(block, "SUBSTACK_2");
+            })
+          )
+          .register(
+            "nop",
+            Command((_, block) => () => {
+              block.setTooltip(
+                translate({
+                  id: "lpp.tooltip.statement.nop",
+                  default:
+                    "Does nothing. It is used to convert a Scratch reporter into a statement.",
+                  description: "No-op block tooltip.",
+                })
+              );
+              input_exports.Any(block, "value");
+            })
+          )
+      );
   }
 
   // src/impl/wrapper.ts
@@ -4571,48 +4822,61 @@
 
   // src/impl/typehint.ts
   function attachType() {
-    function attachType2(fn, signature) {
+    function attachType2(fn, type, signature) {
       const v = asValue(fn);
       if (v instanceof LppFunction)
-        attach(v, new TypeMetadata(signature));
+        attach(v, new TypeMetadata(type, signature));
     }
-    attachType2(Global.Number, ["value?"]);
-    attachType2(Global.Boolean, ["value?"]);
-    attachType2(Global.String, ["value?"]);
-    attachType2(Global.Array, ["value?"]);
-    attachType2(Global.Object, ["value?"]);
-    attachType2(Global.Object.get("create"), ["proto"]);
-    attachType2(Global.Function, ["value?"]);
-    attachType2(Global.Array.get("prototype").get("map"), ["predict"]);
-    attachType2(Global.Array.get("prototype").get("every"), ["predict"]);
-    attachType2(Global.Array.get("prototype").get("any"), ["predict"]);
-    attachType2(Global.Array.get("prototype").get("slice"), ["start?", "end?"]);
-    attachType2(Global.Function.get("prototype").get("bind"), ["self"]);
-    attachType2(Global.Function.get("deserialize"), ["obj"]);
-    attachType2(Global.Function.get("serialize"), ["fn"]);
-    attachType2(Global.Promise, ["executor"]);
-    attachType2(Global.Promise.get("prototype").get("then"), [
-      "onfulfilled?",
-      "onrejected?"
+    attachType2(Global.Number, "function", ["value?"]);
+    attachType2(Global.Boolean, "function", ["value?"]);
+    attachType2(Global.String, "function", ["value?"]);
+    attachType2(Global.Array, "function", ["value?"]);
+    attachType2(Global.Object, "function", ["value?"]);
+    attachType2(Global.Object.get("create"), "function", ["proto"]);
+    attachType2(Global.Function, "function", ["value?"]);
+    attachType2(Global.Array.get("prototype").get("map"), "function", [
+      "predict",
     ]);
-    attachType2(Global.Promise.get("resolve"), ["value?"]);
-    attachType2(Global.Promise.get("reject"), ["reason?"]);
-    attachType2(Global.Promise.get("prototype").get("catch"), ["onrejected"]);
-    attachType2(Global.JSON.get("parse"), ["json"]);
-    attachType2(Global.JSON.get("stringify"), ["value"]);
-    attachType2(Global.Math.get("sin"), ["x"]);
-    attachType2(Global.Math.get("sinh"), ["x"]);
-    attachType2(Global.Math.get("asin"), ["x"]);
-    attachType2(Global.Math.get("asinh"), ["x"]);
-    attachType2(Global.Math.get("cos"), ["x"]);
-    attachType2(Global.Math.get("cosh"), ["x"]);
-    attachType2(Global.Math.get("acos"), ["x"]);
-    attachType2(Global.Math.get("acosh"), ["x"]);
-    attachType2(Global.Math.get("tan"), ["x"]);
-    attachType2(Global.Math.get("tanh"), ["x"]);
-    attachType2(Global.Math.get("atan"), ["x"]);
-    attachType2(Global.Math.get("atanh"), ["x"]);
-    attachType2(Global.Math.get("atan2"), ["x", "y"]);
+    attachType2(Global.Array.get("prototype").get("every"), "function", [
+      "predict",
+    ]);
+    attachType2(Global.Array.get("prototype").get("any"), "function", [
+      "predict",
+    ]);
+    attachType2(Global.Array.get("prototype").get("slice"), "function", [
+      "start?",
+      "end?",
+    ]);
+    attachType2(Global.Function.get("prototype").get("bind"), "function", [
+      "self",
+    ]);
+    attachType2(Global.Function.get("deserialize"), "function", ["obj"]);
+    attachType2(Global.Function.get("serialize"), "function", ["fn"]);
+    attachType2(Global.Promise, "function", ["executor"]);
+    attachType2(Global.Promise.get("prototype").get("then"), "function", [
+      "onfulfilled?",
+      "onrejected?",
+    ]);
+    attachType2(Global.Promise.get("resolve"), "function", ["value?"]);
+    attachType2(Global.Promise.get("reject"), "function", ["reason?"]);
+    attachType2(Global.Promise.get("prototype").get("catch"), "function", [
+      "onrejected",
+    ]);
+    attachType2(Global.JSON.get("parse"), "function", ["json"]);
+    attachType2(Global.JSON.get("stringify"), "function", ["value"]);
+    attachType2(Global.Math.get("sin"), "function", ["x"]);
+    attachType2(Global.Math.get("sinh"), "function", ["x"]);
+    attachType2(Global.Math.get("asin"), "function", ["x"]);
+    attachType2(Global.Math.get("asinh"), "function", ["x"]);
+    attachType2(Global.Math.get("cos"), "function", ["x"]);
+    attachType2(Global.Math.get("cosh"), "function", ["x"]);
+    attachType2(Global.Math.get("acos"), "function", ["x"]);
+    attachType2(Global.Math.get("acosh"), "function", ["x"]);
+    attachType2(Global.Math.get("tan"), "function", ["x"]);
+    attachType2(Global.Math.get("tanh"), "function", ["x"]);
+    attachType2(Global.Math.get("atan"), "function", ["x"]);
+    attachType2(Global.Math.get("atanh"), "function", ["x"]);
+    attachType2(Global.Math.get("atan2"), "function", ["x", "y"]);
   }
 
   // src/impl/promise.ts
@@ -4671,8 +4935,7 @@
           this[PromiseCallback].forEach((callback) => callback());
           this[PromiseCallback] = [];
           setTimeout(() => {
-            if (!res.handled)
-              throw res.reason;
+            if (!res.handled) throw res.reason;
           });
         }
       };
@@ -4695,24 +4958,26 @@
       return new _ImmediatePromise((resolve, reject) => {
         if (this[PromiseResult]) {
           if (this[PromiseResult] instanceof Resolved) {
-            return onfulfilled ? resolve(onfulfilled(this[PromiseResult].value)) : resolve(this[PromiseResult].value);
+            return onfulfilled
+              ? resolve(onfulfilled(this[PromiseResult].value))
+              : resolve(this[PromiseResult].value);
           }
           this[PromiseResult].handled = true;
-          return onrejected ? resolve(onrejected(this[PromiseResult].reason)) : reject(this[PromiseResult].reason);
+          return onrejected
+            ? resolve(onrejected(this[PromiseResult].reason))
+            : reject(this[PromiseResult].reason);
         }
         return void this[PromiseCallback].push(() => {
           try {
             if (this[PromiseResult] instanceof Resolved) {
               if (onfulfilled) {
                 resolve(onfulfilled(this[PromiseResult].value));
-              } else
-                resolve(this[PromiseResult].value);
+              } else resolve(this[PromiseResult].value);
             } else if (this[PromiseResult] instanceof Rejected) {
               this[PromiseResult].handled = true;
               if (onrejected) {
                 resolve(onrejected(this[PromiseResult].reason));
-              } else
-                reject(this[PromiseResult].reason);
+              } else reject(this[PromiseResult].reason);
             }
           } catch (e) {
             reject(e);
@@ -4737,22 +5002,28 @@
      * @version es2018
      */
     finally(onfinally) {
-      if (!onfinally)
-        return this;
+      if (!onfinally) return this;
       return new _ImmediatePromise((resolve, reject) => {
         if (this[PromiseResult]) {
           const res = onfinally();
           if (isPromise(res)) {
             return void res.then(
               () => {
-                return this[PromiseResult] && (this[PromiseResult] instanceof Resolved ? resolve(this[PromiseResult].value) : reject(this[PromiseResult].reason));
+                return (
+                  this[PromiseResult] &&
+                  (this[PromiseResult] instanceof Resolved
+                    ? resolve(this[PromiseResult].value)
+                    : reject(this[PromiseResult].reason))
+                );
               },
               (reason) => {
                 return reject(reason);
               }
             );
           }
-          return this[PromiseResult] instanceof Resolved ? resolve(this[PromiseResult].value) : reject(this[PromiseResult].reason);
+          return this[PromiseResult] instanceof Resolved
+            ? resolve(this[PromiseResult].value)
+            : reject(this[PromiseResult].reason);
         }
         return void this[PromiseCallback].push(() => {
           if (this[PromiseResult]) {
@@ -4761,14 +5032,21 @@
               if (isPromise(res)) {
                 return void res.then(
                   () => {
-                    return this[PromiseResult] && (this[PromiseResult] instanceof Resolved ? resolve(this[PromiseResult].value) : reject(this[PromiseResult].reason));
+                    return (
+                      this[PromiseResult] &&
+                      (this[PromiseResult] instanceof Resolved
+                        ? resolve(this[PromiseResult].value)
+                        : reject(this[PromiseResult].reason))
+                    );
                   },
                   (reason) => {
                     return reject(reason);
                   }
                 );
               }
-              return this[PromiseResult] instanceof Resolved ? resolve(this[PromiseResult].value) : reject(this[PromiseResult].reason);
+              return this[PromiseResult] instanceof Resolved
+                ? resolve(this[PromiseResult].value)
+                : reject(this[PromiseResult].reason);
             } catch (e) {
               reject(e);
             }
@@ -4807,8 +5085,7 @@
      */
     static race(values) {
       return new _ImmediatePromise((resolve) => {
-        for (const v of values)
-          resolve(v);
+        for (const v of values) resolve(v);
       });
     }
     /**
@@ -4820,9 +5097,7 @@
       return new _ImmediatePromise((_, reject) => reject(reason));
     }
     static resolve(value) {
-      return new _ImmediatePromise(
-        (resolve) => resolve(value)
-      );
+      return new _ImmediatePromise((resolve) => resolve(value));
     }
     static allSettled(values) {
       return new _ImmediatePromise((resolve) => {
@@ -4836,7 +5111,7 @@
             (v2) => {
               result[current] = {
                 status: "fulfilled",
-                value: v2
+                value: v2,
               };
               completed++;
               if (performCheck && completed === index) {
@@ -4846,7 +5121,7 @@
             (err) => {
               result[current] = {
                 status: "rejected",
-                reason: err
+                reason: err,
               };
               completed++;
               if (performCheck && completed === index) {
@@ -4875,13 +5150,17 @@
               result[current] = v2;
               failed++;
               if (performCheck && failed === index) {
-                reject(new AggregateError(result, "All promises were rejected"));
+                reject(
+                  new AggregateError(result, "All promises were rejected")
+                );
               }
             }
           );
         }
         if (failed === index) {
-          return reject(new AggregateError(result, "All promises were rejected"));
+          return reject(
+            new AggregateError(result, "All promises were rejected")
+          );
         }
         performCheck = true;
       });
@@ -4950,24 +5229,26 @@
      */
     then(onfulfilled, onrejected) {
       return this.promise.then(
-        onfulfilled ? (value) => {
-          const res = onfulfilled(value);
-          if (!this.afterFulfilledCalled) {
-            if (this.afterResolved)
-              this.afterResolved();
-            this.afterFulfilledCalled = true;
-          }
-          return res;
-        } : void 0,
-        onrejected ? (reason) => {
-          const res = onrejected(reason);
-          if (!this.afterRejectedCalled) {
-            if (this.afterRejected)
-              this.afterRejected();
-            this.afterRejectedCalled = true;
-          }
-          return res;
-        } : void 0
+        onfulfilled
+          ? (value) => {
+              const res = onfulfilled(value);
+              if (!this.afterFulfilledCalled) {
+                if (this.afterResolved) this.afterResolved();
+                this.afterFulfilledCalled = true;
+              }
+              return res;
+            }
+          : void 0,
+        onrejected
+          ? (reason) => {
+              const res = onrejected(reason);
+              if (!this.afterRejectedCalled) {
+                if (this.afterRejected) this.afterRejected();
+                this.afterRejectedCalled = true;
+              }
+              return res;
+            }
+          : void 0
       );
     }
     /**
@@ -4997,17 +5278,21 @@
             fn();
           }
         }
-      }
+      },
     });
   }
   function stepThread(runtime, util, thread) {
     const callerThread = util.thread;
     runtime.sequencer.stepThread(thread);
-    if (thread.isCompiled && callerThread && callerThread.isCompiled && callerThread.generator) {
+    if (
+      thread.isCompiled &&
+      callerThread &&
+      callerThread.isCompiled &&
+      callerThread.generator
+    ) {
       const orig = callerThread.generator;
       callerThread.generator = {
-        next: () => {
-        }
+        next: () => {},
       };
       runtime.sequencer.stepThread(callerThread);
       callerThread.generator = orig;
@@ -5043,14 +5328,14 @@
   };
 
   // src/index.ts
-  (function(Scratch2) {
+  (function (Scratch2) {
     const color = "#808080";
     if (Scratch2.extensions.unsandboxed === false) {
       throw new Error("lpp must be loaded in unsandboxed mode.");
     }
     function hijack(fn) {
       const _orig = Function.prototype.apply;
-      Function.prototype.apply = function(thisArg) {
+      Function.prototype.apply = function (thisArg) {
         return thisArg;
       };
       const result = fn();
@@ -5118,34 +5403,28 @@
         function patchBlockly(Blockly, extension) {
           const Events = Blockly.Events;
           const _Change = Events.Change.prototype.run;
-          Events.Change.prototype.run = function(_forward) {
+          Events.Change.prototype.run = function (_forward) {
             _Change.call(this, _forward);
             const self = this;
-            const block = this.getEventWorkspace_().getBlockById(
-              self.blockId
-            );
+            const block = this.getEventWorkspace_().getBlockById(self.blockId);
             if (block instanceof Blockly.BlockSvg) {
               block.initSvg();
               block.render();
             }
           };
           const _Move = Events.Move.prototype.run;
-          Events.Move.prototype.run = function(_forward) {
+          Events.Move.prototype.run = function (_forward) {
             const self = this;
-            const block = this.getEventWorkspace_().getBlockById(
-              self.blockId
-            );
-            if (block)
-              _Move.call(this, _forward);
+            const block = this.getEventWorkspace_().getBlockById(self.blockId);
+            if (block) _Move.call(this, _forward);
           };
           const _Create = Events.Create.prototype.run;
-          Events.Create.prototype.run = function(_forward) {
+          Events.Create.prototype.run = function (_forward) {
             const self = this;
             const res = [];
             const workspace = this.getEventWorkspace_();
             for (const id of self.ids) {
-              if (workspace.getBlockById(id))
-                res.push(id);
+              if (workspace.getBlockById(id)) res.push(id);
             }
             self.ids = res;
             _Create.call(this, _forward);
@@ -5162,8 +5441,7 @@
           Scratch2.translate
         );
         this.Blockly = getBlockly(this.vm);
-        if (this.Blockly)
-          patchBlockly(this.Blockly, this.extension);
+        if (this.Blockly) patchBlockly(this.Blockly, this.extension);
         else
           this.vm.once("workspaceUpdate", () => {
             const newBlockly = getBlockly(this.vm);
@@ -5175,7 +5453,13 @@
         const _emit = runtime.emit;
         runtime.emit = (event, ...args) => {
           const blacklist = ["SAY", "QUESTION"];
-          if (blacklist.includes(event) && args.length >= 1 && typeof args[0] === "object" && args[0] !== null && Reflect.get(args[0], "id") === "") {
+          if (
+            blacklist.includes(event) &&
+            args.length >= 1 &&
+            typeof args[0] === "object" &&
+            args[0] !== null &&
+            Reflect.get(args[0], "id") === ""
+          ) {
             this.handleError(new LppError("useAfterDispose"));
           }
           return _emit.call(runtime, event, ...args);
@@ -5183,12 +5467,27 @@
         const _visualReport = runtime.visualReport;
         runtime.visualReport = (blockId, value) => {
           const unwrappedValue = Wrapper.unwrap(value);
-          if ((unwrappedValue instanceof LppValue || unwrappedValue instanceof LppReference || unwrappedValue instanceof LppBoundArg) && this.Blockly) {
-            const actualValue = unwrappedValue instanceof LppBoundArg ? unwrappedValue : asValue(unwrappedValue);
+          if (
+            (unwrappedValue instanceof LppValue ||
+              unwrappedValue instanceof LppReference ||
+              unwrappedValue instanceof LppBoundArg) &&
+            this.Blockly
+          ) {
+            const actualValue =
+              unwrappedValue instanceof LppBoundArg
+                ? unwrappedValue
+                : asValue(unwrappedValue);
             dialog_exports.show(
               this.Blockly,
               blockId,
-              [Inspector(this.Blockly, this.vm, Scratch2.translate, actualValue)],
+              [
+                Inspector(
+                  this.Blockly,
+                  this.vm,
+                  Scratch2.translate,
+                  actualValue
+                ),
+              ],
               actualValue instanceof LppConstant ? "center" : "left"
             );
           } else {
@@ -5196,12 +5495,16 @@
           }
         };
         const _requestUpdateMonitor = runtime.requestUpdateMonitor;
+        const monitorMap = /* @__PURE__ */ new Map();
         if (_requestUpdateMonitor) {
           const patchMonitorValue = (element, value) => {
             const valueElement = element.querySelector('[class*="value"]');
             if (valueElement instanceof HTMLElement) {
               const internalInstance = Object.values(valueElement).find(
-                (v) => typeof v === "object" && v !== null && Reflect.has(v, "stateNode")
+                (v) =>
+                  typeof v === "object" &&
+                  v !== null &&
+                  Reflect.has(v, "stateNode")
               );
               if (value instanceof LppValue) {
                 const inspector = Inspector(
@@ -5219,8 +5522,10 @@
               } else {
                 if (internalInstance) {
                   valueElement.style.textAlign = "";
-                  valueElement.style.backgroundColor = internalInstance.memoizedProps?.style?.background ?? "";
-                  valueElement.style.color = internalInstance.memoizedProps?.style?.color ?? "";
+                  valueElement.style.backgroundColor =
+                    internalInstance.memoizedProps?.style?.background ?? "";
+                  valueElement.style.color =
+                    internalInstance.memoizedProps?.style?.color ?? "";
                   while (valueElement.firstChild)
                     valueElement.removeChild(valueElement.firstChild);
                   valueElement.append(String(value));
@@ -5234,17 +5539,18 @@
             );
             for (const element of Object.values(elements)) {
               const internalInstance = Object.values(element).find(
-                (v) => typeof v === "object" && v !== null && Reflect.has(v, "children")
+                (v) =>
+                  typeof v === "object" &&
+                  v !== null &&
+                  Reflect.has(v, "children")
               );
               if (internalInstance) {
                 const props = internalInstance?.children?.props;
-                if (id === props?.id)
-                  return element;
+                if (id === props?.id) return element;
               }
             }
             return null;
           };
-          const monitorMap = /* @__PURE__ */ new Map();
           runtime.requestUpdateMonitor = (state) => {
             const id = state.get("id");
             if (typeof id === "string") {
@@ -5257,31 +5563,31 @@
                 cache.value = void 0;
               } else if (monitorValue !== void 0) {
                 const unwrappedValue = Wrapper.unwrap(monitorValue);
-                if (unwrappedValue instanceof LppValue || unwrappedValue instanceof LppReference || unwrappedValue instanceof LppBoundArg) {
-                  const actualValue = unwrappedValue instanceof LppBoundArg ? unwrappedValue : asValue(unwrappedValue);
-                  if (!cache || cache.value !== actualValue) {
+                if (unwrappedValue instanceof LppValue) {
+                  if (!cache || cache.value !== unwrappedValue) {
                     requestAnimationFrame(() => {
                       const monitor = getMonitorById(id);
                       if (monitor) {
-                        patchMonitorValue(monitor, actualValue);
+                        patchMonitorValue(monitor, unwrappedValue);
                       }
                     });
                     if (!cache) {
                       monitorMap.set(id, {
-                        value: actualValue,
+                        value: unwrappedValue,
                         mode: (() => {
                           if (runtime.getMonitorState) {
-                            const monitorCached = runtime.getMonitorState().get(id);
+                            const monitorCached = runtime
+                              .getMonitorState()
+                              .get(id);
                             if (monitorCached) {
                               const mode = monitorCached.get("mode");
                               return typeof mode === "string" ? mode : "normal";
                             }
                           }
                           return "normal";
-                        })()
+                        })(),
                       });
-                    } else
-                      cache.value = actualValue;
+                    } else cache.value = unwrappedValue;
                   }
                   return true;
                 } else {
@@ -5294,29 +5600,79 @@
                   }
                 }
               } else if (monitorVisible !== void 0) {
-                if (!monitorVisible)
-                  monitorMap.delete(id);
+                if (!monitorVisible) monitorMap.delete(id);
               }
             }
             return _requestUpdateMonitor.call(runtime, state);
           };
         }
+        const patchVariable = (variable) => {
+          let value = variable.value;
+          Object.defineProperty(variable, "value", {
+            get() {
+              return value;
+            },
+            set: (v) => {
+              const unwrappedValue = Wrapper.unwrap(v);
+              if (unwrappedValue instanceof LppBoundArg) {
+                this.handleError(new LppError("syntaxError"));
+              } else if (
+                unwrappedValue instanceof LppValue ||
+                unwrappedValue instanceof LppReference
+              ) {
+                value = new Wrapper(asValue(unwrappedValue));
+              } else {
+                value = v;
+              }
+            },
+          });
+        };
+        const proxyVariable = (target) => {
+          target.variables = new Proxy(target.variables, {
+            set(target2, p, variable) {
+              patchVariable(variable);
+              return Reflect.set(target2, p, variable);
+            },
+          });
+        };
+        const patchTarget = (target) => {
+          Object.values(target.variables).forEach((variable) => {
+            patchVariable(variable);
+          });
+          proxyVariable(target);
+        };
+        for (const target of runtime.targets) {
+          patchTarget(target);
+        }
+        const _addTarget = runtime.addTarget;
+        runtime.addTarget = function (target) {
+          patchTarget(target);
+          return _addTarget.call(this, target);
+        };
+        const _stepThread = runtime.sequencer.stepThread;
+        runtime.sequencer.stepThread = function (thread) {
+          try {
+            return _stepThread.call(this, thread);
+          } catch (e) {
+            if (!(e instanceof LppError)) throw e;
+          }
+        };
         Global.Function.set(
           "serialize",
           LppFunction.native(({ args }) => {
             const fn = args[0];
-            if (!fn || !(fn instanceof LppFunction) || !hasMetadata(fn) || !(fn.metadata instanceof ScratchMetadata)) {
+            if (
+              !fn ||
+              !(fn instanceof LppFunction) ||
+              !hasMetadata(fn) ||
+              !(fn.metadata instanceof ScratchMetadata)
+            ) {
               return async(function* () {
-                return raise(
-                  yield Global.IllegalInvocationError.construct(
-                    []
-                  )
-                );
+                return raise(yield Global.IllegalInvocationError.construct([]));
               });
             }
             const v = fn.metadata.blocks[0]?.getBlock(fn.metadata.blocks[1]);
-            if (!v)
-              throw new Error("lpp: serialize blockId invalid");
+            if (!v) throw new Error("lpp: serialize blockId invalid");
             return new LppReturn(
               LppExtension.serializeFunction(
                 v,
@@ -5336,27 +5692,39 @@
               deserializeBlock(blocks, val.script);
               const blockId = val.script[val.block]?.id;
               const Target = runtime.getTargetForStage()?.constructor;
-              if (!Target)
-                throw new Error("lpp: project is disposed");
-              return new LppReturn(
-                attach(
-                  new LppFunction(
-                    (blockId === "constructAsyncFunction" ? this.executeScratchAsync : this.executeScratch).bind(this, Target)
-                  ),
-                  new ScratchMetadata(
-                    val.signature,
-                    [blocks, val.block],
-                    void 0,
-                    void 0,
-                    void 0
+              const idMap = {
+                constructFunction: "function",
+                constructAsyncFunction: "asyncFunction",
+                // TODO: implement generator
+                constructGeneratorFunction: "generatorFunction",
+                constructAsyncGeneratorFunction: "asyncGeneratorFunction",
+              };
+              if (!Target) throw new Error("lpp: project is disposed");
+              if (blockId in idMap) {
+                return new LppReturn(
+                  attach(
+                    new LppFunction(
+                      (blockId === "constructAsyncFunction"
+                        ? this.executeScratchAsync
+                        : this.executeScratch
+                      ).bind(this, Target)
+                    ),
+                    new ScratchMetadata(
+                      idMap[blockId],
+                      val.signature,
+                      [blocks, val.block],
+                      void 0,
+                      void 0,
+                      void 0
+                    )
                   )
-                )
-              );
+                );
+              }
             }
             return async(function* () {
               return raise(
                 yield Global.SyntaxError.construct([
-                  new LppConstant("Invalid value")
+                  new LppConstant("Invalid value"),
                 ])
               );
             });
@@ -5367,15 +5735,16 @@
           Core: core_exports,
           Metadata: metadata_exports,
           Wrapper,
-          version
+          version,
         };
         console.groupCollapsed("\u{1F4AB} lpp", version);
         console.log(
           "\u{1F31F}",
           Scratch2.translate({
             id: "lpp.about.summary",
-            default: "lpp is a high-level programming language developed by @FurryR.",
-            description: "Extension summary."
+            default:
+              "lpp is a high-level programming language developed by @FurryR.",
+            description: "Extension summary.",
           })
         );
         console.log(
@@ -5383,7 +5752,7 @@
           Scratch2.translate({
             id: "lpp.about.github",
             default: "GitHub repository",
-            description: "GitHub repository hint."
+            description: "GitHub repository hint.",
           }),
           "-> https://github.com/FurryR/lpp-scratch"
         );
@@ -5392,7 +5761,7 @@
           Scratch2.translate({
             id: "lpp.about.afdian",
             default: "Sponsor",
-            description: "Sponsor hint."
+            description: "Sponsor hint.",
           }),
           "-> https://afdian.net/a/FurryR"
         );
@@ -5401,7 +5770,7 @@
           Scratch2.translate({
             id: "lpp.about.staff.1",
             default: "lpp developers staff",
-            description: "Staff list."
+            description: "Staff list.",
           })
         );
         for (const v of developers) {
@@ -5412,7 +5781,7 @@
           Scratch2.translate({
             id: "lpp.about.staff.2",
             default: "lpp won't be created without their effort.",
-            description: "Staff list ending."
+            description: "Staff list ending.",
           })
         );
         console.groupEnd();
@@ -5428,10 +5797,10 @@
           name: Scratch2.translate({
             id: "lpp.name",
             default: "lpp",
-            description: "Extension name."
+            description: "Extension name.",
           }),
           color1: color,
-          blocks: this.extension.export()
+          blocks: this.extension.export(),
         };
       }
       /**
@@ -5441,8 +5810,9 @@
         window.open(
           Scratch2.translate({
             id: "lpp.documentation.url",
-            default: "https://github.com/FurryR/lpp-scratch/blob/main/README.md",
-            description: "Documentation URL."
+            default:
+              "https://github.com/FurryR/lpp-scratch/blob/main/README.md",
+            description: "Documentation URL.",
           })
         );
       }
@@ -5516,34 +5886,36 @@
             this.value = value;
           }
           get priority() {
-            return (/* @__PURE__ */ new Map([
-              [".", 18],
-              ["?.", 18],
-              ["**", 14],
-              ["*", 13],
-              ["/", 13],
-              ["%", 13],
-              ["+", 12],
-              ["-", 12],
-              ["<<", 11],
-              [">>", 11],
-              [">>>", 11],
-              ["<", 10],
-              ["<=", 10],
-              [">", 10],
-              [">=", 10],
-              ["in", 10],
-              ["instanceof", 10],
-              ["==", 9],
-              ["!=", 9],
-              ["&", 8],
-              ["^", 7],
-              ["|", 6],
-              ["&&", 5],
-              ["||", 4],
-              ["=", 2],
-              [",", 1]
-            ])).get(this.value) ?? -1;
+            return (
+              /* @__PURE__ */ new Map([
+                [".", 18],
+                ["?.", 18],
+                ["**", 14],
+                ["*", 13],
+                ["/", 13],
+                ["%", 13],
+                ["+", 12],
+                ["-", 12],
+                ["<<", 11],
+                [">>", 11],
+                [">>>", 11],
+                ["<", 10],
+                ["<=", 10],
+                [">", 10],
+                [">=", 10],
+                ["in", 10],
+                ["instanceof", 10],
+                ["==", 9],
+                ["!=", 9],
+                ["&", 8],
+                ["^", 7],
+                ["|", 6],
+                ["&&", 5],
+                ["||", 4],
+                ["=", 2],
+                [",", 1],
+              ]).get(this.value) ?? -1
+            );
           }
         }
         function intoRPN(input) {
@@ -5554,7 +5926,10 @@
               result.push(value);
             } else {
               let op2;
-              while ((op2 = stack[stack.length - 1]) && op2.priority >= value.priority) {
+              while (
+                (op2 = stack[stack.length - 1]) &&
+                op2.priority >= value.priority
+              ) {
                 result.push(op2);
                 stack.pop();
               }
@@ -5562,7 +5937,7 @@
             }
           }
           let op;
-          while (op = stack.pop()) {
+          while ((op = stack.pop())) {
             result.push(op);
           }
           return result;
@@ -5571,19 +5946,29 @@
           function evaluateInternal(op, lhs, rhs) {
             if (op === "." || op === "?.") {
               if (lhs instanceof LppValue || lhs instanceof LppReference) {
-                if (lhs instanceof LppConstant && lhs.value === null && op === "?.")
+                if (
+                  lhs instanceof LppConstant &&
+                  lhs.value === null &&
+                  op === "?."
+                )
                   return new LppConstant(null);
                 if (typeof rhs === "string" || typeof rhs === "number") {
                   const res2 = lhs.get(`${rhs}`);
                   return op === "?." ? asValue(res2) : res2;
-                } else if (rhs instanceof LppValue || rhs instanceof LppReference) {
+                } else if (
+                  rhs instanceof LppValue ||
+                  rhs instanceof LppReference
+                ) {
                   const res2 = lhs.get(String(asValue(rhs)));
                   return op === "?." ? asValue(res2) : res2;
                 }
                 throw new LppError("invalidIndex");
               }
               throw new LppError("syntaxError");
-            } else if ((lhs instanceof LppValue || lhs instanceof LppReference) && (rhs instanceof LppValue || rhs instanceof LppReference)) {
+            } else if (
+              (lhs instanceof LppValue || lhs instanceof LppReference) &&
+              (rhs instanceof LppValue || rhs instanceof LppReference)
+            ) {
               switch (op) {
                 case "=":
                 case "+":
@@ -5629,14 +6014,11 @@
               const lhs = stack.pop();
               if (lhs !== void 0 && rhs !== void 0) {
                 stack.push(evaluateInternal(value.value, lhs, rhs));
-              } else
-                throw new Error("lpp: invalid expression");
-            } else
-              stack.push(value);
+              } else throw new Error("lpp: invalid expression");
+            } else stack.push(value);
           }
           const res = stack.pop();
-          if (res === void 0)
-            throw new Error("lpp: invalid expression");
+          if (res === void 0) throw new Error("lpp: invalid expression");
           return res;
         }
         try {
@@ -5650,7 +6032,11 @@
               token.push(new Operator(op));
             }
             token.push(
-              value instanceof LppValue || value instanceof LppReference || typeof value === "string" ? value : String(value)
+              value instanceof LppValue ||
+                value instanceof LppReference ||
+                typeof value === "string"
+                ? value
+                : String(value)
             );
           }
           const res = evaluate(intoRPN(token));
@@ -5690,8 +6076,7 @@
               }
               case "await": {
                 const thread = util.thread;
-                if (!thread.lpp)
-                  throw new LppError("useOutsideAsyncFunction");
+                if (!thread.lpp) throw new LppError("useOutsideAsyncFunction");
                 const lpp = thread.lpp.unwind();
                 if (!(lpp instanceof LppAsyncFunctionContext))
                   throw new LppError("useOutsideAsyncFunction");
@@ -5700,13 +6085,11 @@
                 let thenFn;
                 let thenSelf;
                 if (then instanceof LppReference) {
-                  if (!(then.value instanceof LppFunction))
-                    return v;
+                  if (!(then.value instanceof LppFunction)) return v;
                   thenFn = then.value;
                   thenSelf = then.parent.deref() ?? new LppConstant(null);
                 } else {
-                  if (!(then instanceof LppFunction))
-                    return v;
+                  if (!(then instanceof LppFunction)) return v;
                   thenFn = then;
                   thenSelf = new LppConstant(null);
                 }
@@ -5725,7 +6108,7 @@
                         this.vm.runtime.sequencer.retireThread(thread);
                         resolve(new LppConstant(null));
                         return new LppReturn(new LppConstant(null));
-                      })
+                      }),
                     ]);
                   })
                 );
@@ -5735,9 +6118,11 @@
             }
           })();
           return this.asap(
-            ImmediatePromise.resolve(res).then((val) => {
-              return new Wrapper(val);
-            }),
+            ImmediatePromise.sync(
+              ImmediatePromise.resolve(res).then((val) => {
+                return new Wrapper(val);
+              })
+            ),
             util.thread
           );
         } catch (e) {
@@ -5767,27 +6152,30 @@
               );
             else if (value instanceof LppValue || value instanceof LppReference)
               actualArgs.push(asValue(value));
-            else
-              throw new LppError("syntaxError");
+            else throw new LppError("syntaxError");
           }
           if (!(fn instanceof LppValue || fn instanceof LppReference))
             throw new LppError("syntaxError");
           const func = asValue(fn);
           const lppThread = thread;
-          if (!(func instanceof LppFunction))
-            throw new LppError("notCallable");
+          if (!(func instanceof LppFunction)) throw new LppError("notCallable");
           return this.asap(
-            async(function* () {
-              return new Wrapper(
-                this.processApplyValue(
-                  yield func.apply(
-                    fn instanceof LppReference ? fn.parent.deref() ?? new LppConstant(null) : lppThread.lpp?.unwind()?.self ?? new LppConstant(null),
-                    actualArgs
-                  ),
-                  thread
-                )
-              );
-            }.bind(this)),
+            async(
+              function* () {
+                return new Wrapper(
+                  this.processApplyValue(
+                    yield func.apply(
+                      fn instanceof LppReference
+                        ? fn.parent.deref() ?? new LppConstant(null)
+                        : lppThread.lpp?.unwind()?.self ??
+                            new LppConstant(null),
+                      actualArgs
+                    ),
+                    thread
+                  )
+                );
+              }.bind(this)
+            ),
             thread
           );
         } catch (e) {
@@ -5817,20 +6205,21 @@
               );
             else if (value instanceof LppValue || value instanceof LppReference)
               actualArgs.push(asValue(value));
-            else
-              throw new LppError("syntaxError");
+            else throw new LppError("syntaxError");
           }
           if (!(fn instanceof LppValue || fn instanceof LppReference))
             throw new LppError("syntaxError");
           fn = asValue(fn);
           return this.asap(
-            async(function* () {
-              if (!(fn instanceof LppFunction))
-                throw new LppError("notCallable");
-              return new Wrapper(
-                this.processApplyValue(yield fn.construct(actualArgs), thread)
-              );
-            }.bind(this)),
+            async(
+              function* () {
+                if (!(fn instanceof LppFunction))
+                  throw new LppError("notCallable");
+                return new Wrapper(
+                  this.processApplyValue(yield fn.construct(actualArgs), thread)
+                );
+              }.bind(this)
+            ),
             thread
           );
         } catch (e) {
@@ -5894,12 +6283,10 @@
           const len = parseInt(this.getMutation(block)?.length ?? "0", 10);
           for (let i = 0; i < len; i++) {
             const value = Wrapper.unwrap(args[`ARG_${i}`]);
-            if (value instanceof LppBoundArg)
-              arr.value.push(...value.value);
+            if (value instanceof LppBoundArg) arr.value.push(...value.value);
             else if (value instanceof LppValue || value instanceof LppReference)
               arr.value.push(asValue(value));
-            else
-              throw new LppError("syntaxError");
+            else throw new LppError("syntaxError");
           }
           return new Wrapper(arr);
         } catch (e) {
@@ -5926,10 +6313,12 @@
               key = `${key}`;
             } else if (key instanceof LppConstant) {
               key = key.toString();
-            } else if (key instanceof LppReference && key.value instanceof LppConstant) {
+            } else if (
+              key instanceof LppReference &&
+              key.value instanceof LppConstant
+            ) {
               key = key.value.toString();
-            } else
-              throw new LppError("invalidIndex");
+            } else throw new LppError("invalidIndex");
             if (!(value instanceof LppValue || value instanceof LppReference))
               throw new LppError("syntaxError");
             obj.set(key, asValue(value));
@@ -5952,15 +6341,11 @@
           const Target = target.constructor;
           const block = this.getActiveBlockInstance(args, thread);
           const signature = [];
-          const len = parseInt(
-            block?.mutation?.length ?? "0",
-            10
-          );
+          const len = parseInt(block?.mutation?.length ?? "0", 10);
           for (let i = 0; i < len; i++) {
             if (typeof args[`ARG_${i}`] !== "object")
               signature[i] = String(args[`ARG_${i}`]);
-            else
-              throw new LppError("syntaxError");
+            else throw new LppError("syntaxError");
           }
           const blocks = thread.target.blocks;
           const lppThread = thread;
@@ -5968,6 +6353,7 @@
             attach(
               new LppFunction(this.executeScratch.bind(this, Target)),
               new ScratchMetadata(
+                "function",
                 signature,
                 [blocks, block.id],
                 target.sprite.clones[0].id,
@@ -5993,15 +6379,11 @@
           const Target = target.constructor;
           const block = this.getActiveBlockInstance(args, thread);
           const signature = [];
-          const len = parseInt(
-            block?.mutation?.length ?? "0",
-            10
-          );
+          const len = parseInt(block?.mutation?.length ?? "0", 10);
           for (let i = 0; i < len; i++) {
             if (typeof args[`ARG_${i}`] !== "object")
               signature[i] = String(args[`ARG_${i}`]);
-            else
-              throw new LppError("syntaxError");
+            else throw new LppError("syntaxError");
           }
           const blocks = thread.target.blocks;
           const lppThread = thread;
@@ -6009,6 +6391,7 @@
             attach(
               new LppFunction(this.executeScratchAsync.bind(this, Target)),
               new ScratchMetadata(
+                "asyncFunction",
                 signature,
                 [blocks, block.id],
                 target.sprite.clones[0].id,
@@ -6084,17 +6467,21 @@
                   new ImmediatePromise((resolve) => {
                     thenFn.apply(thenSelf, [
                       new LppFunction((ctx) => {
-                        lpp.promise?.resolve(ctx.args[0] ?? new LppConstant(null));
+                        lpp.promise?.resolve(
+                          ctx.args[0] ?? new LppConstant(null)
+                        );
                         this.vm.runtime.sequencer.retireThread(thread);
                         resolve();
                         return new LppReturn(new LppConstant(null));
                       }),
                       new LppFunction((ctx) => {
-                        lpp.promise?.reject(ctx.args[0] ?? new LppConstant(null));
+                        lpp.promise?.reject(
+                          ctx.args[0] ?? new LppConstant(null)
+                        );
                         this.vm.runtime.sequencer.retireThread(thread);
                         resolve();
                         return new LppReturn(new LppConstant(null));
-                      })
+                      }),
                     ]);
                   })
                 ),
@@ -6153,14 +6540,9 @@
         try {
           const block = this.getActiveBlockInstance(args, thread);
           const id = block.inputs.SUBSTACK?.block;
-          if (!id)
-            return;
-          if (!this.util)
-            throw new Error("lpp: util used initialization");
-          const controller = new ThreadController(
-            this.vm.runtime,
-            this.util
-          );
+          if (!id) return;
+          if (!this.util) throw new Error("lpp: util used initialization");
+          const controller = new ThreadController(this.vm.runtime, this.util);
           const parentThread = thread;
           return this.asap(
             ImmediatePromise.sync(
@@ -6171,8 +6553,7 @@
                   (value) => {
                     if (parentThread.lpp) {
                       parentThread.lpp.resolve(value);
-                    } else
-                      throw new LppError("useOutsideFunction");
+                    } else throw new LppError("useOutsideFunction");
                   }
                 );
                 resolve(controller.wait(scopeThread).then(() => void 0));
@@ -6199,14 +6580,10 @@
           if (!(dest instanceof LppReference))
             throw new LppError("syntaxError");
           const id = block.inputs.SUBSTACK?.block;
-          if (!id)
-            return;
+          if (!id) return;
           if (!this.util)
             throw new Error("lpp: util used before initialization");
-          const controller = new ThreadController(
-            this.vm.runtime,
-            this.util
-          );
+          const controller = new ThreadController(this.vm.runtime, this.util);
           const captureId = block.inputs.SUBSTACK_2?.block;
           const parentThread = thread;
           const tryThread = controller.create(id, target);
@@ -6220,8 +6597,7 @@
                     if (value instanceof LppReturn) {
                       if (parentThread.lpp) {
                         parentThread.lpp.resolve(value);
-                      } else
-                        throw new LppError("useOutsideFunction");
+                      } else throw new LppError("useOutsideFunction");
                     } else {
                       triggered = true;
                       if (!captureId) {
@@ -6276,7 +6652,12 @@
       nop({ value }, util) {
         const { thread } = util;
         this.util = util;
-        if (thread.stackClick && thread.atStackTop() && !thread.target.blocks.getBlock(thread.peekStack())?.next && value !== void 0) {
+        if (
+          thread.stackClick &&
+          thread.atStackTop() &&
+          !thread.target.blocks.getBlock(thread.peekStack())?.next &&
+          value !== void 0
+        ) {
           if (thread.isCompiled) {
             this.vm.runtime.visualReport(thread.peekStack(), value);
           } else {
@@ -6350,10 +6731,14 @@
        */
       getActiveBlockInstance(args, thread) {
         const container = thread.target.blocks;
-        const id = thread.isCompiled ? thread.peekStack() : container._cache._executeCached[thread.peekStack()]?._ops?.find(
-          (v) => args === v._argValues
-        )?.id;
-        const block = id ? container.getBlock(id) ?? this.vm.runtime.flyoutBlocks.getBlock(id) : this.vm.runtime.flyoutBlocks.getBlock(thread.peekStack());
+        const id = thread.isCompiled
+          ? thread.peekStack()
+          : container._cache._executeCached[thread.peekStack()]?._ops?.find(
+              (v) => args === v._argValues
+            )?.id;
+        const block = id
+          ? container.getBlock(id) ?? this.vm.runtime.flyoutBlocks.getBlock(id)
+          : this.vm.runtime.flyoutBlocks.getBlock(thread.peekStack());
         if (!block) {
           throw new Error("lpp: cannot get active block");
         }
@@ -6378,7 +6763,7 @@
         const target = new Target(
           {
             blocks,
-            name: ""
+            name: "",
           },
           this.vm.runtime
         );
@@ -6401,16 +6786,14 @@
        * @returns Processed promise or value.
        */
       asap(res, thread) {
-        if (!this.util)
-          throw new Error("lpp: util used before initialization");
-        const controller = new ThreadController(
-          this.vm.runtime,
-          this.util
-        );
+        if (!this.util) throw new Error("lpp: util used before initialization");
+        const controller = new ThreadController(this.vm.runtime, this.util);
         const postProcess = () => {
           controller.step(thread);
         };
-        return isPromise(res) ? new PromiseProxy(res, postProcess, postProcess) : res;
+        return isPromise(res)
+          ? new PromiseProxy(res, postProcess, postProcess)
+          : res;
       }
       executeScratchAsync(Target, ctx) {
         if (hasMetadata(ctx.fn) && ctx.fn.metadata instanceof ScratchMetadata) {
@@ -6420,30 +6803,26 @@
             target = this.vm.runtime.getTargetById(metadata.target);
           if (!target)
             target = this.createDummyTarget(Target, metadata.blocks[0]);
-          const id = metadata.blocks[0].getBlock(metadata.blocks[1])?.inputs.SUBSTACK?.block;
-          if (!id)
-            return new LppReturn(new LppConstant(null));
+          const id = metadata.blocks[0].getBlock(metadata.blocks[1])?.inputs
+            .SUBSTACK?.block;
+          if (!id) return new LppReturn(new LppConstant(null));
           if (!this.util)
             throw new Error("lpp: util used before initialization");
-          const controller = new ThreadController(
-            this.vm.runtime,
-            this.util
-          );
+          const controller = new ThreadController(this.vm.runtime, this.util);
           const thread = controller.create(id, target);
           return ImmediatePromise.sync(
             new ImmediatePromise((resolve) => {
-              const lpp = thread.lpp = new LppAsyncFunctionContext(
+              const lpp = (thread.lpp = new LppAsyncFunctionContext(
                 metadata.closure,
                 ctx.self ?? new LppConstant(null),
                 (val) => {
                   resolve(val);
                 }
-              );
+              ));
               for (const [key, value] of metadata.signature.entries()) {
                 if (key < ctx.args.length)
                   thread.lpp.closure.set(value, ctx.args[key]);
-                else
-                  thread.lpp.closure.set(value, new LppConstant(null));
+                else thread.lpp.closure.set(value, new LppConstant(null));
               }
               controller.wait(thread).then(() => {
                 lpp.detach();
@@ -6462,30 +6841,26 @@
             target = this.vm.runtime.getTargetById(metadata.target);
           if (!target)
             target = this.createDummyTarget(Target, metadata.blocks[0]);
-          const id = metadata.blocks[0].getBlock(metadata.blocks[1])?.inputs.SUBSTACK?.block;
-          if (!id)
-            return new LppReturn(new LppConstant(null));
+          const id = metadata.blocks[0].getBlock(metadata.blocks[1])?.inputs
+            .SUBSTACK?.block;
+          if (!id) return new LppReturn(new LppConstant(null));
           if (!this.util)
             throw new Error("lpp: util used before initialization");
-          const controller = new ThreadController(
-            this.vm.runtime,
-            this.util
-          );
+          const controller = new ThreadController(this.vm.runtime, this.util);
           const thread = controller.create(id, target);
           return ImmediatePromise.sync(
             new ImmediatePromise((resolve) => {
-              const lpp = thread.lpp = new LppFunctionContext(
+              const lpp = (thread.lpp = new LppFunctionContext(
                 metadata.closure,
                 ctx.self ?? new LppConstant(null),
                 (val) => {
                   resolve(val);
                 }
-              );
+              ));
               for (const [key, value] of metadata.signature.entries()) {
                 if (key < ctx.args.length)
                   thread.lpp.closure.set(value, ctx.args[key]);
-                else
-                  thread.lpp.closure.set(value, new LppConstant(null));
+                else thread.lpp.closure.set(value, new LppConstant(null));
               }
               controller.wait(thread).then(() => {
                 lpp.resolve(new LppReturn(new LppConstant(null)));
@@ -6506,7 +6881,7 @@
         const info = {
           signature,
           script: serializeBlock(blocks, block),
-          block: block.id
+          block: block.id,
         };
         return ffi_exports.fromObject(info);
       }
