@@ -3692,12 +3692,13 @@
   // src/impl/blockly/middleware.ts
   function _ReporterBase(fn, type) {
     const prepatch = (Blockly, block) => {
-      block.setOutput(true, "String");
-      block.setOutputShape(
-        type === "square"
-          ? Blockly.OUTPUT_SHAPE_SQUARE
-          : Blockly.OUTPUT_SHAPE_ROUND
-      );
+      const SHAPE_MAP = {
+        square: Blockly.OUTPUT_SHAPE_SQUARE,
+        round: Blockly.OUTPUT_SHAPE_ROUND,
+        hexagon: Blockly.OUTPUT_SHAPE_HEXAGONAL,
+      };
+      block.setOutput(true, type === "hexagon" ? "Boolean" : "String");
+      block.setOutputShape(SHAPE_MAP[type]);
     };
     return {
       init(Blockly, block) {
@@ -3755,6 +3756,10 @@
       return _ReporterBase(fn, "round");
     }
     Reporter2.Round = Round;
+    function Hexagon(fn) {
+      return _ReporterBase(fn, "hexagon");
+    }
+    Reporter2.Hexagon = Hexagon;
   })(Reporter || (Reporter = {}));
 
   // src/impl/blockly/input.ts
@@ -3910,8 +3915,8 @@
         15,
         15,
         () => {
-          Blockly.Events.setGroup(true);
           if (block.mutationToDom && block.domToMutation) {
+            Blockly.Events.setGroup(true);
             const state = block.mutationToDom();
             const oldExtraState = Blockly.Xml.domToText(state);
             const length = state.getAttribute("length");
@@ -3930,8 +3935,8 @@
                 Blockly.Xml.domToText(block.mutationToDom())
               )
             );
+            Blockly.Events.setGroup(false);
           }
-          Blockly.Events.setGroup(false);
         },
         "+",
         false,
@@ -3945,8 +3950,8 @@
         15,
         15,
         () => {
-          Blockly.Events.setGroup(true);
           if (block.mutationToDom && block.domToMutation) {
+            Blockly.Events.setGroup(true);
             const state = block.mutationToDom();
             const oldExtraState = Blockly.Xml.domToText(state);
             const length = state.getAttribute("length");
@@ -3968,8 +3973,8 @@
                 Blockly.Xml.domToText(block.mutationToDom())
               )
             );
+            Blockly.Events.setGroup(false);
           }
-          Blockly.Events.setGroup(false);
         },
         "-",
         false,
@@ -4006,8 +4011,14 @@
         const input = inputs[name];
         if (targetInput.includes(name)) {
           const blocks = target.blocks;
-          blocks.deleteBlock(input.block);
-          blocks.deleteBlock(input.shadow);
+          const targetBlock = blocks.getBlock(input.block);
+          if (!targetBlock || targetBlock.opcode === "text") {
+            blocks.deleteBlock(input.block);
+            blocks.deleteBlock(input.shadow);
+          } else {
+            targetBlock.parent = null;
+            targetBlock.topLevel = true;
+          }
           delete inputs[name];
         }
       }
@@ -4207,13 +4218,14 @@
                       block.moveInputBefore(`ARG_${i}`, "END");
                     }
                   } else {
+                    Blockly.Events.disable();
                     const removeList = [];
                     for (let i = length; i < block.length; i++) {
-                      block.removeInput(`ARG_${i}`, true);
-                      block.removeInput(`COMMA_${i}`, true);
                       removeList.push(`ARG_${i}`, `COMMA_${i}`);
                     }
+                    removeList.forEach((v) => block.removeInput(v, true));
                     cleanInputs(block.id, removeList);
+                    Blockly.Events.enable();
                   }
                   block.length = length;
                   updateButton(Blockly, block);
@@ -4266,12 +4278,9 @@
                       block.moveInputBefore(`KEY_${i}`, `COLON_${i}`);
                     }
                   } else {
+                    Blockly.Events.disable();
                     const removeList = [];
                     for (let i = length; i < block.length; i++) {
-                      block.removeInput(`KEY_${i}`, true);
-                      block.removeInput(`COLON_${i}`, true);
-                      block.removeInput(`VALUE_${i}`, true);
-                      block.removeInput(`COMMA_${i}`, true);
                       removeList.push(
                         `KEY_${i}`,
                         `COLON_${i}`,
@@ -4279,7 +4288,9 @@
                         `COMMA_${i}`
                       );
                     }
+                    removeList.forEach((v) => block.removeInput(v, true));
                     cleanInputs(block.id, removeList);
+                    Blockly.Events.enable();
                   }
                   block.length = length;
                   updateButton(Blockly, block);
@@ -4336,13 +4347,14 @@
                       block.moveInputBefore(`ARG_${i}`, "END");
                     }
                   } else {
+                    Blockly.Events.disable();
                     const removeList = [];
                     for (let i = length; i < block.length; i++) {
-                      block.removeInput(`ARG_${i}`, true);
-                      block.removeInput(`COMMA_${i}`, true);
                       removeList.push(`ARG_${i}`, `COMMA_${i}`);
                     }
+                    removeList.forEach((v) => block.removeInput(v, true));
                     cleanInputs(block.id, removeList);
+                    Blockly.Events.enable();
                   }
                   block.length = length;
                   updateButton(Blockly, block);
@@ -4399,13 +4411,14 @@
                       block.moveInputBefore(`ARG_${i}`, "END");
                     }
                   } else {
+                    Blockly.Events.disable();
                     const removeList = [];
                     for (let i = length; i < block.length; i++) {
-                      block.removeInput(`ARG_${i}`, true);
-                      block.removeInput(`COMMA_${i}`, true);
                       removeList.push(`ARG_${i}`, `COMMA_${i}`);
                     }
+                    removeList.forEach((v) => block.removeInput(v, true));
                     cleanInputs(block.id, removeList);
+                    Blockly.Events.enable();
                   }
                   block.length = length;
                   updateButton(Blockly, block);
@@ -4499,9 +4512,9 @@
                       block.moveInputBefore(`ARG_${i}`, "END");
                     }
                   } else {
+                    Blockly.Events.disable();
                     const removeList = [];
                     for (let i = length; i < block.length; i++) {
-                      block.removeInput(`ARG_${i}`, true);
                       block.removeInput(`OP_${i}`, true);
                       const fields = runtime
                         .getEditingTarget()
@@ -4509,7 +4522,9 @@
                       if (fields) delete fields[`OP_${i}`];
                       removeList.push(`ARG_${i}`);
                     }
+                    removeList.forEach((v) => block.removeInput(v, true));
                     cleanInputs(block.id, removeList);
+                    Blockly.Events.enable();
                   }
                   block.length = length;
                   updateButton(Blockly, block, 2);
@@ -4587,13 +4602,14 @@
                       block.moveInputBefore(`ARG_${i}`, "END");
                     }
                   } else {
+                    Blockly.Events.disable();
                     const removeList = [];
                     for (let i = length; i < block.length; i++) {
-                      block.removeInput(`ARG_${i}`, true);
-                      block.removeInput(`COMMA_${i}`, true);
                       removeList.push(`ARG_${i}`, `COMMA_${i}`);
                     }
+                    removeList.forEach((v) => block.removeInput(v, true));
                     cleanInputs(block.id, removeList);
+                    Blockly.Events.enable();
                   }
                   block.length = length;
                   updateButton(Blockly, block);
@@ -4643,13 +4659,14 @@
                       block.moveInputBefore(`ARG_${i}`, "END");
                     }
                   } else {
+                    Blockly.Events.disable();
                     const removeList = [];
                     for (let i = length; i < block.length; i++) {
-                      block.removeInput(`ARG_${i}`, true);
-                      block.removeInput(`COMMA_${i}`, true);
                       removeList.push(`ARG_${i}`, `COMMA_${i}`);
                     }
+                    removeList.forEach((v) => block.removeInput(v, true));
                     cleanInputs(block.id, removeList);
+                    Blockly.Events.enable();
                   }
                   block.length = length;
                   updateButton(Blockly, block);
@@ -4792,33 +4809,6 @@
           )
       );
   }
-
-  // src/impl/wrapper.ts
-  var Wrapper = class _Wrapper extends String {
-    /**
-     * Construct a wrapped value.
-     * @param value Value to wrap.
-     */
-    constructor(value) {
-      super(value);
-      this.value = value;
-    }
-    /**
-     * Unwraps a wrapped object.
-     * @param value Wrapped object.
-     * @returns Unwrapped object.
-     */
-    static unwrap(value) {
-      return value instanceof _Wrapper ? value.value : value;
-    }
-    /**
-     * toString method for Scratch monitors.
-     * @returns String display.
-     */
-    toString() {
-      return String(this.value);
-    }
-  };
 
   // src/impl/typehint.ts
   function attachType() {
@@ -5330,126 +5320,63 @@
   // src/index.ts
   (function (Scratch2) {
     const color = "#808080";
+    const id = "lpp";
     if (Scratch2.extensions.unsandboxed === false) {
       throw new Error("lpp must be loaded in unsandboxed mode.");
     }
-    function hijack(fn) {
-      const _orig = Function.prototype.apply;
-      Function.prototype.apply = function (thisArg) {
-        return thisArg;
-      };
-      const result = fn();
-      Function.prototype.apply = _orig;
-      return result;
-    }
-    function getVM(runtime) {
-      let virtualMachine;
-      if (runtime._events["QUESTION"] instanceof Array) {
-        for (const value of runtime._events["QUESTION"]) {
-          const v = hijack(value);
-          if (v?.props?.vm) {
-            virtualMachine = v?.props?.vm;
-            break;
+    const vm = Scratch2.vm;
+    const runtime = vm.runtime;
+    const BlocklyExtension = defineExtension(
+      id,
+      color,
+      runtime,
+      Scratch2.translate
+    );
+    let Blockly = void 0;
+    Scratch2.gui.getBlockly().then((ScratchBlocks) => {
+      Blockly = ScratchBlocks;
+      function patchBlockly(Blockly2, extension) {
+        const Events = Blockly2.Events;
+        const _Change = Events.Change.prototype.run;
+        Events.Change.prototype.run = function (_forward) {
+          _Change.call(this, _forward);
+          const self = this;
+          const block = this.getEventWorkspace_().getBlockById(self.blockId);
+          if (block instanceof Blockly2.BlockSvg) {
+            block.initSvg();
+            block.render();
           }
-        }
-      } else if (runtime._events["QUESTION"]) {
-        virtualMachine = hijack(runtime._events["QUESTION"])?.props?.vm;
-      }
-      if (!virtualMachine)
-        throw new Error("lpp cannot get Virtual Machine instance.");
-      return virtualMachine;
-    }
-    function getBlockly(vm) {
-      let Blockly;
-      if (vm._events["EXTENSION_ADDED"] instanceof Array) {
-        for (const value of vm._events["EXTENSION_ADDED"]) {
-          const v = hijack(value);
-          if (v?.ScratchBlocks) {
-            Blockly = v?.ScratchBlocks;
-            break;
+        };
+        const _Move = Events.Move.prototype.run;
+        Events.Move.prototype.run = function (_forward) {
+          const self = this;
+          const block = this.getEventWorkspace_().getBlockById(self.blockId);
+          if (block) _Move.call(this, _forward);
+        };
+        const _Create = Events.Create.prototype.run;
+        Events.Create.prototype.run = function (_forward) {
+          const self = this;
+          const res = [];
+          const workspace = this.getEventWorkspace_();
+          for (const id2 of self.ids) {
+            if (workspace.getBlockById(id2)) res.push(id2);
           }
-        }
-      } else if (vm._events["EXTENSION_ADDED"]) {
-        Blockly = hijack(vm._events["EXTENSION_ADDED"])?.ScratchBlocks;
+          self.ids = res;
+          _Create.call(this, _forward);
+        };
+        extension.inject(Blockly2);
       }
-      return Blockly;
-    }
+      patchBlockly(Blockly, BlocklyExtension);
+    });
     class LppExtension {
-      /**
-       * Extension ID.
-       */
-      static id = "lpp";
-      /**
-       * Virtual machine instance.
-       */
-      vm;
-      /**
-       * ScratchBlocks instance.
-       */
-      Blockly;
-      /**
-       * Blockly extension.
-       */
-      extension;
       /**
        * Scratch util.
        */
       util;
       /**
        * Construct a new instance of lpp.
-       * @param originalRuntime Scratch runtime.
        */
-      constructor(originalRuntime) {
-        function patchBlockly(Blockly, extension) {
-          const Events = Blockly.Events;
-          const _Change = Events.Change.prototype.run;
-          Events.Change.prototype.run = function (_forward) {
-            _Change.call(this, _forward);
-            const self = this;
-            const block = this.getEventWorkspace_().getBlockById(self.blockId);
-            if (block instanceof Blockly.BlockSvg) {
-              block.initSvg();
-              block.render();
-            }
-          };
-          const _Move = Events.Move.prototype.run;
-          Events.Move.prototype.run = function (_forward) {
-            const self = this;
-            const block = this.getEventWorkspace_().getBlockById(self.blockId);
-            if (block) _Move.call(this, _forward);
-          };
-          const _Create = Events.Create.prototype.run;
-          Events.Create.prototype.run = function (_forward) {
-            const self = this;
-            const res = [];
-            const workspace = this.getEventWorkspace_();
-            for (const id of self.ids) {
-              if (workspace.getBlockById(id)) res.push(id);
-            }
-            self.ids = res;
-            _Create.call(this, _forward);
-          };
-          extension.inject(Blockly);
-        }
-        const runtime = originalRuntime;
-        this.Blockly = void 0;
-        this.vm = getVM(runtime);
-        this.extension = defineExtension(
-          LppExtension.id,
-          color,
-          this.vm.runtime,
-          Scratch2.translate
-        );
-        this.Blockly = getBlockly(this.vm);
-        if (this.Blockly) patchBlockly(this.Blockly, this.extension);
-        else
-          this.vm.once("workspaceUpdate", () => {
-            const newBlockly = getBlockly(this.vm);
-            if (newBlockly && newBlockly !== this.Blockly) {
-              this.Blockly = newBlockly;
-              patchBlockly(newBlockly, this.extension);
-            }
-          });
+      constructor() {
         const _emit = runtime.emit;
         runtime.emit = (event, ...args) => {
           const blacklist = ["SAY", "QUESTION"];
@@ -5466,28 +5393,18 @@
         };
         const _visualReport = runtime.visualReport;
         runtime.visualReport = (blockId, value) => {
-          const unwrappedValue = Wrapper.unwrap(value);
           if (
-            (unwrappedValue instanceof LppValue ||
-              unwrappedValue instanceof LppReference ||
-              unwrappedValue instanceof LppBoundArg) &&
-            this.Blockly
+            (value instanceof LppValue ||
+              value instanceof LppReference ||
+              value instanceof LppBoundArg) &&
+            Blockly
           ) {
             const actualValue =
-              unwrappedValue instanceof LppBoundArg
-                ? unwrappedValue
-                : asValue(unwrappedValue);
+              value instanceof LppBoundArg ? value : asValue(value);
             dialog_exports.show(
-              this.Blockly,
+              Blockly,
               blockId,
-              [
-                Inspector(
-                  this.Blockly,
-                  this.vm,
-                  Scratch2.translate,
-                  actualValue
-                ),
-              ],
+              [Inspector(Blockly, vm, Scratch2.translate, actualValue)],
               actualValue instanceof LppConstant ? "center" : "left"
             );
           } else {
@@ -5508,8 +5425,8 @@
               );
               if (value instanceof LppValue) {
                 const inspector = Inspector(
-                  this.Blockly,
-                  this.vm,
+                  Blockly,
+                  vm,
                   Scratch2.translate,
                   value
                 );
@@ -5533,7 +5450,7 @@
               }
             }
           };
-          const getMonitorById = (id) => {
+          const getMonitorById = (id2) => {
             const elements = document.querySelectorAll(
               `[class*="monitor_monitor-container"]`
             );
@@ -5546,39 +5463,38 @@
               );
               if (internalInstance) {
                 const props = internalInstance?.children?.props;
-                if (id === props?.id) return element;
+                if (id2 === props?.id) return element;
               }
             }
             return null;
           };
           runtime.requestUpdateMonitor = (state) => {
-            const id = state.get("id");
-            if (typeof id === "string") {
+            const id2 = state.get("id");
+            if (typeof id2 === "string") {
               const monitorValue = state.get("value");
               const monitorMode = state.get("mode");
               const monitorVisible = state.get("visible");
-              const cache = monitorMap.get(id);
+              const cache = monitorMap.get(id2);
               if (typeof monitorMode === "string" && cache) {
                 cache.mode = monitorMode;
                 cache.value = void 0;
               } else if (monitorValue !== void 0) {
-                const unwrappedValue = Wrapper.unwrap(monitorValue);
-                if (unwrappedValue instanceof LppValue) {
-                  if (!cache || cache.value !== unwrappedValue) {
+                if (monitorValue instanceof LppValue) {
+                  if (!cache || cache.value !== monitorValue) {
                     requestAnimationFrame(() => {
-                      const monitor = getMonitorById(id);
+                      const monitor = getMonitorById(id2);
                       if (monitor) {
-                        patchMonitorValue(monitor, unwrappedValue);
+                        patchMonitorValue(monitor, monitorValue);
                       }
                     });
                     if (!cache) {
-                      monitorMap.set(id, {
-                        value: unwrappedValue,
+                      monitorMap.set(id2, {
+                        value: monitorValue,
                         mode: (() => {
                           if (runtime.getMonitorState) {
                             const monitorCached = runtime
                               .getMonitorState()
-                              .get(id);
+                              .get(id2);
                             if (monitorCached) {
                               const mode = monitorCached.get("mode");
                               return typeof mode === "string" ? mode : "normal";
@@ -5587,20 +5503,20 @@
                           return "normal";
                         })(),
                       });
-                    } else cache.value = unwrappedValue;
+                    } else cache.value = monitorValue;
                   }
                   return true;
                 } else {
-                  if (monitorMap.has(id)) {
-                    const monitor = getMonitorById(id);
+                  if (monitorMap.has(id2)) {
+                    const monitor = getMonitorById(id2);
                     if (monitor) {
                       patchMonitorValue(monitor, monitorValue);
                     }
-                    monitorMap.delete(id);
+                    monitorMap.delete(id2);
                   }
                 }
               } else if (monitorVisible !== void 0) {
-                if (!monitorVisible) monitorMap.delete(id);
+                if (!monitorVisible) monitorMap.delete(id2);
               }
             }
             return _requestUpdateMonitor.call(runtime, state);
@@ -5613,14 +5529,10 @@
               return value;
             },
             set: (v) => {
-              const unwrappedValue = Wrapper.unwrap(v);
-              if (unwrappedValue instanceof LppBoundArg) {
+              if (v instanceof LppBoundArg) {
                 this.handleError(new LppError("syntaxError"));
-              } else if (
-                unwrappedValue instanceof LppValue ||
-                unwrappedValue instanceof LppReference
-              ) {
-                value = new Wrapper(asValue(unwrappedValue));
+              } else if (v instanceof LppValue || v instanceof LppReference) {
+                value = asValue(v);
               } else {
                 value = v;
               }
@@ -5734,7 +5646,6 @@
         runtime.lpp = {
           Core: core_exports,
           Metadata: metadata_exports,
-          Wrapper,
           version,
         };
         console.groupCollapsed("\u{1F4AB} lpp", version);
@@ -5793,14 +5704,14 @@
        */
       getInfo() {
         return {
-          id: LppExtension.id,
+          id,
           name: Scratch2.translate({
             id: "lpp.name",
             default: "lpp",
             description: "Extension name.",
           }),
           color1: color,
-          blocks: this.extension.export(),
+          blocks: BlocklyExtension.export(),
         };
       }
       /**
@@ -5825,7 +5736,7 @@
         this.util = util;
         const instance = Global[args.value];
         if (instance) {
-          return new Wrapper(instance);
+          return instance;
         }
         throw new Error("lpp: not implemented");
       }
@@ -5855,22 +5766,19 @@
        */
       constructLiteral(args, util) {
         this.util = util;
-        const res = (() => {
-          switch (args.value) {
-            case "null":
-              return new LppConstant(null);
-            case "true":
-              return new LppConstant(true);
-            case "false":
-              return new LppConstant(false);
-            case "NaN":
-              return new LppConstant(NaN);
-            case "Infinity":
-              return new LppConstant(Infinity);
-          }
-          throw new Error("lpp: unknown literal");
-        })();
-        return new Wrapper(res);
+        switch (args.value) {
+          case "null":
+            return new LppConstant(null);
+          case "true":
+            return new LppConstant(true);
+          case "false":
+            return new LppConstant(false);
+          case "NaN":
+            return new LppConstant(NaN);
+          case "Infinity":
+            return new LppConstant(Infinity);
+        }
+        throw new Error("lpp: unknown literal");
       }
       /**
        * Make binary calculations.
@@ -6027,7 +5935,7 @@
           const len = parseInt(this.getMutation(block)?.length ?? "0", 10);
           for (let i = 0; i < len; i++) {
             const op = args[`OP_${i}`];
-            const value = Wrapper.unwrap(args[`ARG_${i}`]);
+            const value = args[`ARG_${i}`];
             if (typeof op === "string") {
               token.push(new Operator(op));
             }
@@ -6042,7 +5950,7 @@
           const res = evaluate(intoRPN(token));
           if (typeof res === "string")
             throw new Error("lpp: invalid expression");
-          return new Wrapper(res);
+          return res;
         } catch (e) {
           this.handleError(e);
         }
@@ -6056,7 +5964,7 @@
       unaryOp(args, util) {
         this.util = util;
         try {
-          const value = Wrapper.unwrap(args.value);
+          const value = args.value;
           if (!(value instanceof LppValue || value instanceof LppReference))
             throw new LppError("syntaxError");
           const res = (() => {
@@ -6105,7 +6013,7 @@
                         thread.lpp?.resolve(
                           new LppException(ctx.args[0] ?? new LppConstant(null))
                         );
-                        this.vm.runtime.sequencer.retireThread(thread);
+                        vm.runtime.sequencer.retireThread(thread);
                         resolve(new LppConstant(null));
                         return new LppReturn(new LppConstant(null));
                       }),
@@ -6118,11 +6026,7 @@
             }
           })();
           return this.asap(
-            ImmediatePromise.sync(
-              ImmediatePromise.resolve(res).then((val) => {
-                return new Wrapper(val);
-              })
-            ),
+            ImmediatePromise.sync(ImmediatePromise.resolve(res)),
             util.thread
           );
         } catch (e) {
@@ -6139,13 +6043,12 @@
         const { thread } = util;
         this.util = util;
         try {
-          let { fn } = args;
-          fn = Wrapper.unwrap(fn);
+          const { fn } = args;
           const actualArgs = [];
           const block = this.getActiveBlockInstance(args, thread);
           const len = parseInt(this.getMutation(block)?.length ?? "0", 10);
           for (let i = 0; i < len; i++) {
-            const value = Wrapper.unwrap(args[`ARG_${i}`]);
+            const value = args[`ARG_${i}`];
             if (value instanceof LppBoundArg)
               actualArgs.push(
                 ...value.value.map((val) => val ?? new LppConstant(null))
@@ -6162,17 +6065,14 @@
           return this.asap(
             async(
               function* () {
-                return new Wrapper(
-                  this.processApplyValue(
-                    yield func.apply(
-                      fn instanceof LppReference
-                        ? fn.parent.deref() ?? new LppConstant(null)
-                        : lppThread.lpp?.unwind()?.self ??
-                            new LppConstant(null),
-                      actualArgs
-                    ),
-                    thread
-                  )
+                return this.processApplyValue(
+                  yield func.apply(
+                    fn instanceof LppReference
+                      ? fn.parent.deref() ?? new LppConstant(null)
+                      : lppThread.lpp?.unwind()?.self ?? new LppConstant(null),
+                    actualArgs
+                  ),
+                  thread
                 );
               }.bind(this)
             ),
@@ -6193,12 +6093,11 @@
         this.util = util;
         try {
           let { fn } = args;
-          fn = Wrapper.unwrap(fn);
           const actualArgs = [];
           const block = this.getActiveBlockInstance(args, thread);
           const len = parseInt(this.getMutation(block)?.length ?? "0", 10);
           for (let i = 0; i < len; i++) {
-            const value = Wrapper.unwrap(args[`ARG_${i}`]);
+            const value = args[`ARG_${i}`];
             if (value instanceof LppBoundArg)
               actualArgs.push(
                 ...value.value.map((val) => val ?? new LppConstant(null))
@@ -6215,8 +6114,9 @@
               function* () {
                 if (!(fn instanceof LppFunction))
                   throw new LppError("notCallable");
-                return new Wrapper(
-                  this.processApplyValue(yield fn.construct(actualArgs), thread)
+                return this.processApplyValue(
+                  yield fn.construct(actualArgs),
+                  thread
                 );
               }.bind(this)
             ),
@@ -6240,7 +6140,7 @@
           if (lppThread.lpp) {
             const unwind = lppThread.lpp.unwind();
             if (unwind) {
-              return new Wrapper(unwind.self);
+              return unwind.self;
             }
           }
           throw new LppError("useOutsideFunction");
@@ -6256,7 +6156,7 @@
       constructNumber(args, util) {
         const obj = new LppConstant(Number(args.value));
         this.util = util;
-        return new Wrapper(obj);
+        return obj;
       }
       /**
        * Construct a String.
@@ -6266,7 +6166,7 @@
       constructString(args, util) {
         const obj = new LppConstant(String(args.value));
         this.util = util;
-        return new Wrapper(obj);
+        return obj;
       }
       /**
        * Construct an Array.
@@ -6282,13 +6182,13 @@
           const block = this.getActiveBlockInstance(args, thread);
           const len = parseInt(this.getMutation(block)?.length ?? "0", 10);
           for (let i = 0; i < len; i++) {
-            const value = Wrapper.unwrap(args[`ARG_${i}`]);
+            const value = args[`ARG_${i}`];
             if (value instanceof LppBoundArg) arr.value.push(...value.value);
             else if (value instanceof LppValue || value instanceof LppReference)
               arr.value.push(asValue(value));
             else throw new LppError("syntaxError");
           }
-          return new Wrapper(arr);
+          return arr;
         } catch (e) {
           this.handleError(e);
         }
@@ -6307,8 +6207,8 @@
           const block = this.getActiveBlockInstance(args, thread);
           const len = parseInt(this.getMutation(block)?.length ?? "0", 10);
           for (let i = 0; i < len; i++) {
-            let key = Wrapper.unwrap(args[`KEY_${i}`]);
-            const value = Wrapper.unwrap(args[`VALUE_${i}`]);
+            let key = args[`KEY_${i}`];
+            const value = args[`VALUE_${i}`];
             if (typeof key === "string" || typeof key === "number") {
               key = `${key}`;
             } else if (key instanceof LppConstant) {
@@ -6323,7 +6223,7 @@
               throw new LppError("syntaxError");
             obj.set(key, asValue(value));
           }
-          return new Wrapper(obj);
+          return obj;
         } catch (e) {
           this.handleError(e);
         }
@@ -6349,17 +6249,15 @@
           }
           const blocks = thread.target.blocks;
           const lppThread = thread;
-          return new Wrapper(
-            attach(
-              new LppFunction(this.executeScratch.bind(this, Target)),
-              new ScratchMetadata(
-                "function",
-                signature,
-                [blocks, block.id],
-                target.sprite.clones[0].id,
-                target.id,
-                lppThread.lpp
-              )
+          return attach(
+            new LppFunction(this.executeScratch.bind(this, Target)),
+            new ScratchMetadata(
+              "function",
+              signature,
+              [blocks, block.id],
+              target.sprite.clones[0].id,
+              target.id,
+              lppThread.lpp
             )
           );
         } catch (e) {
@@ -6387,17 +6285,15 @@
           }
           const blocks = thread.target.blocks;
           const lppThread = thread;
-          return new Wrapper(
-            attach(
-              new LppFunction(this.executeScratchAsync.bind(this, Target)),
-              new ScratchMetadata(
-                "asyncFunction",
-                signature,
-                [blocks, block.id],
-                target.sprite.clones[0].id,
-                target.id,
-                lppThread.lpp
-              )
+          return attach(
+            new LppFunction(this.executeScratchAsync.bind(this, Target)),
+            new ScratchMetadata(
+              "asyncFunction",
+              signature,
+              [blocks, block.id],
+              target.sprite.clones[0].id,
+              target.id,
+              lppThread.lpp
             )
           );
         } catch (e) {
@@ -6417,7 +6313,7 @@
           const lppThread = thread;
           if (lppThread.lpp) {
             const v = lppThread.lpp.get(args.name);
-            return new Wrapper(v);
+            return v;
           }
           throw new LppError("useOutsideContext");
         } catch (e) {
@@ -6433,7 +6329,6 @@
         try {
           const { thread } = util;
           this.util = util;
-          value = Wrapper.unwrap(value);
           if (!(value instanceof LppValue || value instanceof LppReference))
             throw new LppError("syntaxError");
           const val = asValue(value);
@@ -6448,7 +6343,7 @@
                 if (!(then.value instanceof LppFunction)) {
                   lpp.detach();
                   lpp.promise?.resolve(val);
-                  return this.vm.runtime.sequencer.retireThread(thread);
+                  return vm.runtime.sequencer.retireThread(thread);
                 }
                 thenFn = then.value;
                 thenSelf = then.parent.deref() ?? new LppConstant(null);
@@ -6456,7 +6351,7 @@
                 if (!(then instanceof LppFunction)) {
                   lpp.detach();
                   lpp.promise?.resolve(val);
-                  return this.vm.runtime.sequencer.retireThread(thread);
+                  return vm.runtime.sequencer.retireThread(thread);
                 }
                 thenFn = then;
                 thenSelf = new LppConstant(null);
@@ -6470,7 +6365,7 @@
                         lpp.promise?.resolve(
                           ctx.args[0] ?? new LppConstant(null)
                         );
-                        this.vm.runtime.sequencer.retireThread(thread);
+                        vm.runtime.sequencer.retireThread(thread);
                         resolve();
                         return new LppReturn(new LppConstant(null));
                       }),
@@ -6478,7 +6373,7 @@
                         lpp.promise?.reject(
                           ctx.args[0] ?? new LppConstant(null)
                         );
-                        this.vm.runtime.sequencer.retireThread(thread);
+                        vm.runtime.sequencer.retireThread(thread);
                         resolve();
                         return new LppReturn(new LppConstant(null));
                       }),
@@ -6489,7 +6384,7 @@
               );
             } else if (lpp instanceof LppFunctionContext) {
               lpp.resolve(new LppReturn(val));
-              return this.vm.runtime.sequencer.retireThread(thread);
+              return vm.runtime.sequencer.retireThread(thread);
             }
           }
           throw new LppError("useOutsideFunction");
@@ -6506,7 +6401,6 @@
         try {
           const { thread } = util;
           this.util = util;
-          value = Wrapper.unwrap(value);
           if (!(value instanceof LppValue || value instanceof LppReference))
             throw new LppError("syntaxError");
           const val = asValue(value);
@@ -6521,7 +6415,7 @@
           );
           if (lppThread.lpp) {
             lppThread.lpp.resolve(result);
-            return this.vm.runtime.sequencer.retireThread(thread);
+            return vm.runtime.sequencer.retireThread(thread);
           }
           this.handleException(result);
         } catch (e) {
@@ -6539,15 +6433,15 @@
         this.util = util;
         try {
           const block = this.getActiveBlockInstance(args, thread);
-          const id = block.inputs.SUBSTACK?.block;
-          if (!id) return;
+          const id2 = block.inputs.SUBSTACK?.block;
+          if (!id2) return;
           if (!this.util) throw new Error("lpp: util used initialization");
-          const controller = new ThreadController(this.vm.runtime, this.util);
+          const controller = new ThreadController(vm.runtime, this.util);
           const parentThread = thread;
           return this.asap(
             ImmediatePromise.sync(
               new ImmediatePromise((resolve) => {
-                const scopeThread = controller.create(id, target);
+                const scopeThread = controller.create(id2, target);
                 scopeThread.lpp = new LppContext(
                   parentThread.lpp ?? void 0,
                   (value) => {
@@ -6576,17 +6470,17 @@
         this.util = util;
         try {
           const block = this.getActiveBlockInstance(args, thread);
-          const dest = Wrapper.unwrap(args.var);
+          const dest = args.var;
           if (!(dest instanceof LppReference))
             throw new LppError("syntaxError");
-          const id = block.inputs.SUBSTACK?.block;
-          if (!id) return;
+          const id2 = block.inputs.SUBSTACK?.block;
+          if (!id2) return;
           if (!this.util)
             throw new Error("lpp: util used before initialization");
-          const controller = new ThreadController(this.vm.runtime, this.util);
+          const controller = new ThreadController(vm.runtime, this.util);
           const captureId = block.inputs.SUBSTACK_2?.block;
           const parentThread = thread;
-          const tryThread = controller.create(id, target);
+          const tryThread = controller.create(id2, target);
           let triggered = false;
           return this.asap(
             ImmediatePromise.sync(
@@ -6659,7 +6553,7 @@
           value !== void 0
         ) {
           if (thread.isCompiled) {
-            this.vm.runtime.visualReport(thread.peekStack(), value);
+            vm.runtime.visualReport(thread.peekStack(), value);
           } else {
             return value;
           }
@@ -6677,14 +6571,14 @@
             const stack = thread.peekStack();
             if (stack) {
               warnError(
-                this.Blockly,
-                this.vm,
+                Blockly,
+                vm,
                 Scratch2.translate,
                 e.id,
                 stack,
                 thread.target.sprite.clones[0].id
               );
-              this.vm.runtime.stopAll();
+              vm.runtime.stopAll();
             }
           }
         }
@@ -6695,8 +6589,8 @@
        * @param e LppException object.
        */
       handleException(e) {
-        warnException(this.Blockly, this.vm, Scratch2.translate, e);
-        this.vm.runtime.stopAll();
+        warnException(Blockly, vm, Scratch2.translate, e);
+        vm.runtime.stopAll();
         throw new Error("lpp: user exception");
       }
       /**
@@ -6731,14 +6625,14 @@
        */
       getActiveBlockInstance(args, thread) {
         const container = thread.target.blocks;
-        const id = thread.isCompiled
+        const id2 = thread.isCompiled
           ? thread.peekStack()
           : container._cache._executeCached[thread.peekStack()]?._ops?.find(
               (v) => args === v._argValues
             )?.id;
-        const block = id
-          ? container.getBlock(id) ?? this.vm.runtime.flyoutBlocks.getBlock(id)
-          : this.vm.runtime.flyoutBlocks.getBlock(thread.peekStack());
+        const block = id2
+          ? container.getBlock(id2) ?? vm.runtime.flyoutBlocks.getBlock(id2)
+          : vm.runtime.flyoutBlocks.getBlock(thread.peekStack());
         if (!block) {
           throw new Error("lpp: cannot get active block");
         }
@@ -6765,7 +6659,7 @@
             blocks,
             name: "",
           },
-          this.vm.runtime
+          vm.runtime
         );
         target.id = "";
         const warnFn = () => {
@@ -6787,7 +6681,7 @@
        */
       asap(res, thread) {
         if (!this.util) throw new Error("lpp: util used before initialization");
-        const controller = new ThreadController(this.vm.runtime, this.util);
+        const controller = new ThreadController(vm.runtime, this.util);
         const postProcess = () => {
           controller.step(thread);
         };
@@ -6800,16 +6694,16 @@
           const metadata = ctx.fn.metadata;
           let target;
           if (metadata.target)
-            target = this.vm.runtime.getTargetById(metadata.target);
+            target = vm.runtime.getTargetById(metadata.target);
           if (!target)
             target = this.createDummyTarget(Target, metadata.blocks[0]);
-          const id = metadata.blocks[0].getBlock(metadata.blocks[1])?.inputs
+          const id2 = metadata.blocks[0].getBlock(metadata.blocks[1])?.inputs
             .SUBSTACK?.block;
-          if (!id) return new LppReturn(new LppConstant(null));
+          if (!id2) return new LppReturn(new LppConstant(null));
           if (!this.util)
             throw new Error("lpp: util used before initialization");
-          const controller = new ThreadController(this.vm.runtime, this.util);
-          const thread = controller.create(id, target);
+          const controller = new ThreadController(vm.runtime, this.util);
+          const thread = controller.create(id2, target);
           return ImmediatePromise.sync(
             new ImmediatePromise((resolve) => {
               const lpp = (thread.lpp = new LppAsyncFunctionContext(
@@ -6838,16 +6732,16 @@
           const metadata = ctx.fn.metadata;
           let target;
           if (metadata.target)
-            target = this.vm.runtime.getTargetById(metadata.target);
+            target = vm.runtime.getTargetById(metadata.target);
           if (!target)
             target = this.createDummyTarget(Target, metadata.blocks[0]);
-          const id = metadata.blocks[0].getBlock(metadata.blocks[1])?.inputs
+          const id2 = metadata.blocks[0].getBlock(metadata.blocks[1])?.inputs
             .SUBSTACK?.block;
-          if (!id) return new LppReturn(new LppConstant(null));
+          if (!id2) return new LppReturn(new LppConstant(null));
           if (!this.util)
             throw new Error("lpp: util used before initialization");
-          const controller = new ThreadController(this.vm.runtime, this.util);
-          const thread = controller.create(id, target);
+          const controller = new ThreadController(vm.runtime, this.util);
+          const thread = controller.create(id2, target);
           return ImmediatePromise.sync(
             new ImmediatePromise((resolve) => {
               const lpp = (thread.lpp = new LppFunctionContext(
@@ -6886,6 +6780,6 @@
         return ffi_exports.fromObject(info);
       }
     }
-    Scratch2.extensions.register(new LppExtension(Scratch2.vm.runtime));
+    Scratch2.extensions.register(new LppExtension());
   })(Scratch);
 })();
